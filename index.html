@@ -128,6 +128,12 @@ main{padding:28px 32px 60px;min-width:0}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--g9);color:#fff;padding:12px 20px;border-radius:999px;font-weight:700;font-size:.88rem;z-index:99;box-shadow:var(--sh)}
 .toast.err{background:var(--red)}
 
+.sigw{border:2px solid var(--line);border-radius:14px;background:#fff;position:relative;touch-action:none}
+.sigw.bad{border-color:var(--red)}
+.sigw canvas{display:block;width:100%;height:150px;cursor:crosshair}
+.sigw .ln{position:absolute;left:20px;right:20px;bottom:34px;border-bottom:1.5px dashed #c9d1c6;pointer-events:none}
+.sigw .ph{position:absolute;inset:0;display:grid;place-items:center;color:#a6b0a7;font-weight:600;pointer-events:none}
+.lk{background:none;border:0;color:var(--red);font:inherit;font-weight:700;font-size:.8rem;cursor:pointer}
 /* DOKUMEN */
 .cur{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:linear-gradient(150deg,var(--g8),var(--g6));color:#fff;border-radius:20px;padding:22px}
 .cur .ic{width:62px;height:76px;border-radius:10px;background:#fff;color:var(--g7);display:grid;place-items:center;font-weight:800;font-size:.8rem;box-shadow:6px 6px 0 rgba(227,169,35,.6)}
@@ -173,6 +179,7 @@ details.card summary::after{content:"+";font-size:1.2rem}details.card[open] summ
     <div class="pw"><input id="lp" type="password" autocomplete="current-password" required><button type="button" onclick="const i=$('lp');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'LIHAT':'SOROK'">LIHAT</button></div>
     <button class="btn b-green" id="lbtn">Log Masuk</button>
     <div id="lmsg"></div>
+    <p class="s" style="margin-top:18px;margin-bottom:0">Ahli persatuan? <a href="pkb.html" style="color:var(--g7);font-weight:800">Mohon kelulusan belanja (PKB) →</a></p>
   </form>
 </section>
 
@@ -230,7 +237,7 @@ async function api(action, data={}){
 }
 function toast(m,err){ const t=document.createElement("div"); t.className="toast"+(err?" err":""); t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),3800); }
 const loading=(t="Memuatkan…")=>`<div class="loading"><div class="spin"></div>${t}</div>`;
-const can=(...roles)=>USER && roles.includes(USER.peranan);
+const CAP=k=>!!(USER&&USER.caps&&USER.caps[k]); const OKP=n=>!n||n==="all"||CAP(n);
 
 /* ---------- LOG MASUK ---------- */
 $("loginForm").onsubmit=async e=>{
@@ -248,31 +255,32 @@ async function logout(){ try{ await api("logout"); }catch(e){} forceLogout("Anda
 
 /* ---------- NAVIGASI ---------- */
 const PAGES=[
-  {id:"utama",t:"Utama",ic:"home",roles:["Pentadbir","Pengurus Keahlian","AJK"]},
-  {id:"pendaftaran",t:"Pendaftaran",ic:"reg",roles:["Pentadbir","Pengurus Keahlian","AJK"],cnt:true},
-  {id:"ahli",t:"Senarai Ahli",ic:"users",roles:["Pentadbir","Pengurus Keahlian","AJK"]},
+  {id:"utama",t:"Utama",ic:"home"},
+  {id:"pendaftaran",t:"Pendaftaran",ic:"reg",cnt:true},
+  {id:"ahli",t:"Senarai Ahli",ic:"users"},
+  {id:"pkb",t:"Perbelanjaan (PKB)",ic:"money",cnt:true},
   {sep:"Dokumen"},
-  {id:"perlembagaan",t:"Perlembagaan",ic:"book",roles:["Pentadbir","Pengurus Keahlian","AJK"]},
-  {id:"borang",t:"Borang",ic:"file",roles:["Pentadbir","Pengurus Keahlian","AJK"]},
+  {id:"perlembagaan",t:"Perlembagaan",ic:"book"},
+  {id:"borang",t:"Borang",ic:"file"},
   {sep:"Sistem"},
-  {id:"pengguna",t:"Pengguna",ic:"key",roles:["Pentadbir"]},
-  {id:"log",t:"Log Aktiviti",ic:"log",roles:["Pentadbir"]},
-  {id:"tetapan",t:"Tetapan",ic:"cog",roles:["Pentadbir"]},
-  {id:"akaun",t:"Akaun Saya",ic:"key",roles:["Pentadbir","Pengurus Keahlian","AJK"]}
+  {id:"pengguna",t:"Pengguna",ic:"key",need:"admin"},
+  {id:"log",t:"Log Aktiviti",ic:"log",need:"admin"},
+  {id:"tetapan",t:"Tetapan",ic:"cog",need:"admin"},
+  {id:"akaun",t:"Akaun Saya",ic:"key"}
 ];
 function buildNav(){
-  $("nav").innerHTML=PAGES.filter(p=>p.sep||p.roles.includes(USER.peranan)).map(p=>p.sep?`<div class="sep">${p.sep}</div>`:
-    `<a data-p="${p.id}" onclick="go('${p.id}')">${svg(p.ic)}${p.t}${p.cnt?'<span class="cnt" id="navCnt" hidden></span>':""}</a>`).join("");
+  $("nav").innerHTML=PAGES.filter(p=>p.sep?(p.sep!=="Sistem"||true):OKP(p.need)).map(p=>p.sep?`<div class="sep">${p.sep}</div>`:
+    `<a data-p="${p.id}" onclick="go('${p.id}')">${svg(p.ic)}${p.t}${p.cnt?`<span class="cnt" id="cnt_${p.id}" hidden></span>`:""}</a>`).join("");
   $("whoN").textContent=USER.nama||USER.username; $("whoR").textContent=USER.peranan;
 }
 function go(p){
   location.hash=p; $("side").classList.remove("open");
   document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.p===p));
-  const page=PAGES.find(x=>x.id===p); if(!page||!page.roles.includes(USER.peranan)) return go("utama");
+  const page=PAGES.find(x=>x.id===p); if(!page||!OKP(page.need)) return go("utama");
   window.scrollTo(0,0); R[p]();
 }
 function head(t,s,right=""){ return `<div class="top"><div><h2>${t}</h2><p>${s||""}</p></div><div>${right}</div></div>`; }
-function setCnt(n){ const c=$("navCnt"); if(c){ c.hidden=!n; c.textContent=n; } }
+function setCnt(n,id="pendaftaran"){ const c=$("cnt_"+id); if(c){ c.hidden=!n; c.textContent=n; } }
 
 /* ---------- HALAMAN ---------- */
 const R={};
@@ -302,6 +310,8 @@ R.utama=async()=>{
           ${L(s.URL_MINIT,"minit","Minit Mesyuarat","Folder Google Drive")}
           ${L(s.URL_SHEET_DAFTAR,"sheet","Sheet Pendaftaran","Kemas kini manual")}
           ${L(s.URL_SHEET_SENARAI,"sheet","Sheet Senarai Ahli","Kemas kini manual")}
+          ${L(s.URL_PKB,"form","Borang PKB","Permohonan kelulusan belanja")}
+          ${L(s.URL_SHEET_PKB,"sheet","Sheet Perbelanjaan","Rekod PKB & baucar")}
         </div>
         <div style="margin-top:14px">${d.perlembagaan?`<a class="lnk" style="cursor:pointer" onclick="openDoc('${d.perlembagaan.id}')"><i>${svg("book")}</i><span><b>Perlembagaan semasa</b><small>${esc(d.perlembagaan.versi)}${d.perlembagaan.kuatkuasa?" · berkuat kuasa "+esc(d.perlembagaan.kuatkuasa):""}</small></span></a>`:`<a class="lnk" style="cursor:pointer" onclick="go('perlembagaan')"><i>${svg("book")}</i><span><b>Perlembagaan</b><small>Belum dimuat naik</small></span></a>`}</div>
       </div>
@@ -337,7 +347,7 @@ async function openReg(ref){
   $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>Butiran permohonan</h3><small>${esc(ref)}</small></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">${loading()}</div>`;
   try{
     const d=await api("regDetail",{ref}); const s=d.summary;
-    const mgr=can("Pentadbir","Pengurus Keahlian"), done=s.status==="Diluluskan";
+    const mgr=CAP("keahlian"), done=s.status==="Diluluskan";
     const sg=d.suggest||{};
     let sugg="";
     if(sg.kind==="new") sugg=sg.existing?`<div class="msg err">No. KP ini sudah wujud dalam Senarai Ahli sebagai <b>${esc(sg.existing)}</b>. Mungkin pendaftaran berganda. Gunakan pilihan kemas kini manual jika perlu.</div>`:`Akan ditambah ke Senarai Ahli sebagai ahli baharu. Cadangan No. Ahli:`;
@@ -432,7 +442,7 @@ R.perlembagaan=async()=>{
     (c?`<div class="cur"><div class="ic">${extOf(c.name)}</div><div><span class="badge">VERSI SEMASA</span><h3>${esc(c.tajuk)}</h3><p>${esc(c.versi)}${c.kuatkuasa?" · Berkuat kuasa "+esc(c.kuatkuasa):""} · Dimuat naik ${esc(c.dimuatNaik)} oleh ${esc(c.oleh)}</p>${c.catatan?`<p style="margin-top:4px">${esc(c.catatan)}</p>`:""}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn b-gold" onclick="openDoc('${c.id}')">${svg("eye")}Baca</button><button class="btn b-ghost" onclick="openDoc('${c.id}',false)">${svg("dl")}Muat turun</button></div></div>`
      :`<div class="card"><div class="empty">Belum ada perlembagaan dimuat naik.</div></div>`)+
-    (can("Pentadbir")?`<details class="card" style="margin-top:18px"${c?"":" open"}><summary>Muat naik versi baharu perlembagaan</summary>
+    (CAP("perlembagaan")?`<details class="card" style="margin-top:18px"${c?"":" open"}><summary>Muat naik versi baharu perlembagaan</summary>
       <div class="msg info" style="margin-top:12px">Versi semasa akan dipindahkan ke Arkib secara automatik dan masih boleh dirujuk.</div>
       <div class="up"><div><label class="l">Tajuk</label><input id="pTajuk" value="Perlembagaan Persatuan Pakar Perubatan Kesihatan Awam Negeri Kedah"></div>
       <div><label class="l">Versi / edisi *</label><input id="pVersi" placeholder="cth: Edisi ke-2 (Pindaan 2026)"></div>
@@ -459,14 +469,14 @@ R.borang=async()=>{
     const j=await api("docs",{kategori:"borang"}); const by={};
     j.kategori.forEach(k=>by[k]=[]); j.files.forEach(f=>(by[f.kategori]||(by[f.kategori]=[])).push(f));
     m.innerHTML=head("Borang","Borang rasmi persatuan untuk rujukan dan muat turun AJK.")+
-    (can("Pentadbir","Pengurus Keahlian")?`<details class="card"${j.files.length?"":" open"}><summary>Muat naik borang</summary>
+    (CAP("dokumen")?`<details class="card"${j.files.length?"":" open"}><summary>Muat naik borang</summary>
       <div class="up"><div><label class="l">Tajuk borang *</label><input id="bTajuk" placeholder="cth: Borang Tuntutan Perbelanjaan"></div>
       <div><label class="l">Kategori</label><select id="bKat">${j.kategori.map(k=>`<option>${esc(k)}</option>`).join("")}</select></div>
       <div><label class="l">Versi / tarikh kemas kini</label><input id="bVersi" placeholder="cth: v2 – Jan 2026"></div>
       <div><label class="l">Fail *</label><input type="file" id="bFile"></div>
       <div class="full"><label class="l">Catatan</label><input id="bNota" placeholder="cth: Gunakan untuk tuntutan program persatuan"></div></div>
       <div style="margin-top:14px"><button class="btn b-green" onclick="upBorang(this)">${svg("up")}Muat naik</button></div></details>`:"")+
-    Object.entries(by).map(([k,fs])=>`<div class="kat">${esc(k)} (${fs.length})</div>`+(fs.length?`<div class="doclist">${fs.map(f=>`<div class="doc"><div class="ic">${extOf(f.name)}</div><div><b>${esc(f.tajuk)}</b><small>${f.versi?esc(f.versi)+" · ":""}${fsz(f.size)} · Dimuat naik ${esc(f.dimuatNaik)}${f.catatan?" · "+esc(f.catatan):""}</small></div><div class="acts"><button class="btn b-ghost b-sm" onclick="openDoc('${f.id}')">Lihat</button><button class="btn b-ghost b-sm" onclick="openDoc('${f.id}',false)">Muat turun</button>${can("Pentadbir")?`<button class="btn b-red b-sm" onclick="delDoc('${f.id}','${esc(f.tajuk).replace(/'/g,"")}')">Padam</button>`:""}</div></div>`).join("")}</div>`:`<div style="color:var(--muted);font-size:.86rem;padding:4px 2px">Tiada borang.</div>`)).join("");
+    Object.entries(by).map(([k,fs])=>`<div class="kat">${esc(k)} (${fs.length})</div>`+(fs.length?`<div class="doclist">${fs.map(f=>`<div class="doc"><div class="ic">${extOf(f.name)}</div><div><b>${esc(f.tajuk)}</b><small>${f.versi?esc(f.versi)+" · ":""}${fsz(f.size)} · Dimuat naik ${esc(f.dimuatNaik)}${f.catatan?" · "+esc(f.catatan):""}</small></div><div class="acts"><button class="btn b-ghost b-sm" onclick="openDoc('${f.id}')">Lihat</button><button class="btn b-ghost b-sm" onclick="openDoc('${f.id}',false)">Muat turun</button>${CAP("admin")?`<button class="btn b-red b-sm" onclick="delDoc('${f.id}','${esc(f.tajuk).replace(/'/g,"")}')">Padam</button>`:""}</div></div>`).join("")}</div>`:`<div style="color:var(--muted);font-size:.86rem;padding:4px 2px">Tiada borang.</div>`)).join("");
   }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 };
 async function upBorang(btn){
@@ -478,26 +488,188 @@ async function upBorang(btn){
 }
 async function delDoc(id,t){ if(!confirm(`Padam borang "${t}"? Fail akan dipindahkan ke Trash Google Drive.`)) return; try{ const j=await api("docDelete",{id}); toast(j.message); R.borang(); }catch(e){ toast(e.message,true); } }
 
+/* ---------- TANDATANGAN (komponen) ---------- */
+function SigPad(host){
+  host.innerHTML=`<div class="sigw"><canvas></canvas><div class="ln"></div><div class="ph">Tandatangan di sini</div></div><div style="text-align:right;margin-top:4px"><button type="button" class="lk">Padam</button></div>`;
+  const w=host.querySelector(".sigw"), cv=host.querySelector("canvas"), cx=cv.getContext("2d"), ph=host.querySelector(".ph"); let draw=false,has=false,last=null;
+  const size=()=>{ const r=cv.getBoundingClientRect(); if(!r.width) return; const d=Math.max(2,devicePixelRatio||1); cv.width=r.width*d; cv.height=r.height*d; cx.setTransform(d,0,0,d,0,0); cx.lineCap="round"; cx.lineJoin="round"; cx.strokeStyle="#0d2a6b"; cx.lineWidth=2.3; has=false; ph.style.display=""; };
+  const pos=e=>{ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  cv.addEventListener("pointerdown",e=>{ if(!cv.width) size(); draw=true; last=pos(e); cv.setPointerCapture(e.pointerId); has=true; ph.style.display="none"; w.classList.remove("bad"); });
+  cv.addEventListener("pointermove",e=>{ if(!draw) return; const p=pos(e); cx.beginPath(); cx.moveTo(last.x,last.y); cx.lineTo(p.x,p.y); cx.stroke(); last=p; });
+  ["pointerup","pointercancel"].forEach(ev=>cv.addEventListener(ev,()=>draw=false));
+  host.querySelector(".lk").onclick=size; setTimeout(size,60);
+  return { has:()=>has, mark:()=>w.classList.add("bad"), png:()=>{
+    const W=cv.width,H=cv.height,d=cx.getImageData(0,0,W,H).data; let x0=W,y0=H,x1=0,y1=0;
+    for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2) if(d[(y*W+x)*4+3]>10){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}
+    if(x1<=x0) return null; const p=14; x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(W,x1+p);y1=Math.min(H,y1+p);
+    const s=Math.min(1,600/(x1-x0)), o=document.createElement("canvas"); o.width=Math.round((x1-x0)*s); o.height=Math.round((y1-y0)*s);
+    o.getContext("2d").drawImage(cv,x0,y0,x1-x0,y1-y0,0,0,o.width,o.height); return o.toDataURL("image/png"); } };
+}
+/* Pemilih tandatangan: guna yang tersimpan atau lukis baharu */
+let SIGSEL=null;
+function sigPicker(host,hasSaved){
+  host.innerHTML=(hasSaved?`<div class="chips" style="margin-bottom:8px"><button type="button" class="chip on" data-m="saved">Guna tandatangan tersimpan</button><button type="button" class="chip" data-m="draw">Lukis baharu</button></div><div id="sgSaved" class="sugg">Tandatangan tersimpan anda akan digunakan. <span id="sgImg"></span></div>`:`<div class="msg info" style="margin-bottom:8px;font-size:.82rem">Tip: simpan tandatangan anda di <b>Akaun Saya</b> supaya tidak perlu melukis setiap kali.</div>`)+`<div id="sgDraw"${hasSaved?" hidden":""}></div>`;
+  const pad=SigPad(host.querySelector("#sgDraw")); let mode=hasSaved?"saved":"draw";
+  host.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ mode=b.dataset.m; host.querySelectorAll("[data-m]").forEach(x=>x.classList.toggle("on",x===b)); host.querySelector("#sgSaved").hidden=mode!=="saved"; host.querySelector("#sgDraw").hidden=mode!=="draw"; if(mode==="draw") setTimeout(()=>host.querySelector(".lk").click(),30); });
+  if(hasSaved) api("sigGet").then(j=>{ const s=host.querySelector("#sgImg"); if(s&&j.data) s.innerHTML=`<img src="${j.data}" style="height:46px;vertical-align:middle;background:#fff;border-radius:6px;margin-left:6px">`; }).catch(()=>{});
+  SIGSEL={ get:()=>{ if(mode==="saved") return {useSaved:true}; if(!pad.has()){ pad.mark(); throw new Error("Sila turunkan tandatangan."); } return {signature:pad.png()}; } };
+}
+
+/* ---------- PERBELANJAAN (PKB) ---------- */
+const PKB_ST={"Menunggu Sokongan":"Baharu","Menunggu Semakan":"Baharu","Dikuiri":"Ditolak","Menunggu Kelulusan":"Disahkan","Diluluskan":"Diluluskan","Dibayar":"Disahkan","Selesai":"Aktif","Tidak Diluluskan":"Ditolak","Dibatalkan":"Tamat"};
+const pkbBadge=s=>`<span class="st ${PKB_ST[s]||"Baharu"}">${esc(s)}</span>`;
+const RM=n=>"RM"+Number(n||0).toLocaleString("en-MY",{minimumFractionDigits:2,maximumFractionDigits:2});
+let PKB_F="todo", PKB_Q="", PKB_Y="";
+function myTodo(r){ const c=USER.caps||{}; return (c.kewangan&&["Menunggu Semakan","Diluluskan","Dibayar"].includes(r.status))||(c.slot==="PENGERUSI"&&r.status==="Menunggu Kelulusan"&&!r.pengerusi)||(c.slot==="SETIAUSAHA"&&r.status==="Menunggu Kelulusan"&&!r.setiausaha&&CACHE.pkbMode==="TIGA"); }
+R.pkb=async()=>{
+  const m=$("main"); const H=()=>head("Perbelanjaan (PKB)","Permohonan Kelulusan Belanja, kelulusan bersama dan rekod pembayaran persatuan.",
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn b-gold" target="_blank" href="${esc((CACHE.settings||{}).URL_PKB||"pkb.html")}">+ Borang PKB</a>${CACHE.pkbSheet?`<a class="btn b-ghost" target="_blank" href="${esc(CACHE.pkbSheet)}">${svg("sheet")}Sheet</a>`:""}<button class="btn b-ghost" onclick="R.pkb()">Muat semula</button></div>`);
+  m.innerHTML=H()+loading();
+  try{
+    if(!CACHE.settings) CACHE.settings=(await api("settingsGet")).settings;
+    const j=await api("pkbList"); CACHE.pkb=j.rows; CACHE.pkbMode=j.mode; CACHE.pkbCara=j.cara; CACHE.pkbSheet=j.urlSheet; setCnt(j.todo,"pkb");
+    const yrs=[...new Set(j.rows.map(r=>r.tahun).filter(Boolean))].sort().reverse(); if(!PKB_Y) PKB_Y=yrs[0]||String(new Date().getFullYear());
+    if(!j.todo && PKB_F==="todo") PKB_F="semua";
+    m.innerHTML=H()+`<div class="tiles" id="pkbTiles"></div>
+    <div class="tools"><div class="chips" id="pkbChips"></div><select id="pkbY" style="max-width:110px">${(yrs.length?yrs:[PKB_Y]).map(y=>`<option ${y===PKB_Y?"selected":""}>${y}</option>`).join("")}</select><input id="pkbQ" placeholder="Cari no. siri / pemohon / penerima…" value="${esc(PKB_Q)}"></div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>No. Siri</th><th>Jawatankuasa / Pemohon</th><th>Penerima</th><th style="text-align:right">Jumlah</th><th>Status</th></tr></thead><tbody id="pkbBody"></tbody></table></div>
+    <div class="card" style="margin-top:18px"><h3>Ringkasan mengikut jawatankuasa <small style="font-weight:500;color:var(--muted)" id="pkbYl"></small></h3><div class="tblw"><table class="tbl"><thead><tr><th>Jawatankuasa</th><th style="text-align:right">Bil. PKB</th><th style="text-align:right">Diluluskan</th><th style="text-align:right">Dibayar</th></tr></thead><tbody id="pkbSum"></tbody></table></div></div>
+    <p class="note" style="font-size:.8rem;color:var(--muted);margin-top:10px">Mod kelulusan: <b>${j.mode==="TIGA"?"Pengerusi, Setiausaha & Bendahari (Fasal 10.4)":"Bendahari + Pengerusi"}</b> · Melebihi RM${j.had.jk.toLocaleString()} perlu rujukan kelulusan Jawatankuasa; melebihi RM${j.had.ma.toLocaleString()} perlu kebenaran Mesyuarat Agung.</p>`;
+    $("pkbQ").oninput=e=>{PKB_Q=e.target.value;drawPkb()}; $("pkbY").onchange=e=>{PKB_Y=e.target.value;drawPkb()}; drawPkb();
+  }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+};
+function drawPkb(){
+  const all=CACHE.pkb, yr=all.filter(r=>r.tahun===PKB_Y);
+  const lulus=yr.filter(r=>["Diluluskan","Dibayar","Selesai"].includes(r.status)), bayar=yr.filter(r=>["Dibayar","Selesai"].includes(r.status));
+  const sum=a=>a.reduce((x,r)=>x+r.jumlah,0), sumB=a=>a.reduce((x,r)=>x+(r.dibayar||0),0);
+  $("pkbTiles").innerHTML=`<div class="tile hl"><b>${all.filter(myTodo).length}</b><span>Perlu tindakan saya</span></div>
+    <div class="tile"><b>${all.filter(r=>["Menunggu Semakan","Menunggu Kelulusan","Menunggu Sokongan"].includes(r.status)).length}</b><span>Dalam proses semakan / kelulusan</span></div>
+    <div class="tile"><b style="font-size:1.5rem">${RM(sum(lulus))}</b><span>Diluluskan ${esc(PKB_Y)}</span></div>
+    <div class="tile"><b style="font-size:1.5rem">${RM(sumB(bayar))}</b><span>Telah dibayar ${esc(PKB_Y)}</span></div>`;
+  const F={todo:["Perlu tindakan saya",myTodo],semua:["Semua",()=>true],proses:["Dalam proses",r=>["Menunggu Sokongan","Menunggu Semakan","Menunggu Kelulusan","Dikuiri"].includes(r.status)],
+    lulus:["Diluluskan (belum bayar)",r=>r.status==="Diluluskan"],bayar:["Dibayar",r=>r.status==="Dibayar"],selesai:["Selesai",r=>r.status==="Selesai"],tolak:["Ditolak / batal",r=>["Tidak Diluluskan","Dibatalkan"].includes(r.status)]};
+  $("pkbChips").innerHTML=Object.entries(F).map(([k,[t,f]])=>`<button class="chip${PKB_F===k?" on":""}" onclick="PKB_F='${k}';drawPkb()">${t} (${all.filter(f).length})</button>`).join("");
+  const q=PKB_Q.toLowerCase(); const rows=all.filter(F[PKB_F][1]).filter(r=>PKB_F==="todo"||PKB_F==="proses"||r.tahun===PKB_Y).filter(r=>!q||(r.ref+r.pemohon+r.penerima+r.jawatankuasa).toLowerCase().includes(q));
+  $("pkbBody").innerHTML=rows.map(r=>`<tr class="click" onclick="openPkb('${esc(r.ref)}')"><td><b>${esc(r.ref)}</b><small>${esc(r.tarikh)}</small></td><td><span class="nm">${esc(r.jawatankuasa)}</span><small>${esc(r.pemohon)}</small></td><td>${esc(r.penerima)}</td><td style="text-align:right;font-weight:700">${RM(r.jumlah)}</td><td>${pkbBadge(r.status)}${r.baucar?`<small>${esc(r.baucar)}</small>`:""}${r.status==="Menunggu Kelulusan"?`<small>${r.pengerusi?"✓":"○"} Pengerusi${CACHE.pkbMode==="TIGA"?` · ${r.setiausaha?"✓":"○"} Setiausaha`:""}</small>`:""}</td></tr>`).join("")||`<tr><td colspan="5" class="empty">Tiada PKB dalam kategori ini.</td></tr>`;
+  const g={}; yr.forEach(r=>{ const k=r.jawatankuasa||"-"; g[k]=g[k]||{n:0,l:0,b:0}; g[k].n++; if(["Diluluskan","Dibayar","Selesai"].includes(r.status)) g[k].l+=r.jumlah; g[k].b+=r.dibayar||0; });
+  $("pkbYl").textContent="· "+PKB_Y;
+  $("pkbSum").innerHTML=Object.entries(g).sort((a,b)=>b[1].l-a[1].l).map(([k,v])=>`<tr><td>${esc(k)}</td><td style="text-align:right">${v.n}</td><td style="text-align:right">${RM(v.l)}</td><td style="text-align:right">${RM(v.b)}</td></tr>`).join("")||`<tr><td colspan="4" class="empty">Tiada data.</td></tr>`;
+}
+async function pkbPdf(ref,kind,view){ toast("Menyediakan PDF…"); try{ openBlob(await api("pkbPdf",{ref,kind}),view); }catch(e){ toast(e.message,true); } }
+async function pkbFile(ref,id,view){ toast("Memuatkan fail…"); try{ openBlob(await api("pkbFile",{ref,id}),view); }catch(e){ toast(e.message,true); } }
+async function openPkb(ref){
+  $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>${esc(ref)}</h3></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">${loading()}</div>`;
+  try{
+    const d=await api("pkbDetail",{ref}); const r=d.rec, c=d.can; const amt=+r["Jumlah (RM)"]||0;
+    const kv=rows=>`<div class="kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join("")}</div>`;
+    const sec=t=>`<div class="kat" style="margin-top:18px">${t}</div>`;
+    let act="";
+    if(c.review) act=`<div class="act" style="border-color:var(--gold3)"><h4>Bahagian B — Semakan Bendahari</h4><p>Semak dokumen dan peruntukan. Sokongan anda akan menghantar PKB untuk kelulusan.</p>
+      <div class="up"><div><label class="l">Peruntukan (RM)</label><input id="aPer" type="number" step="0.01" value="${esc(d.peruntukanLalu)}" oninput="bakiCalc()"></div>
+      <div><label class="l">Perbelanjaan (RM) <small>(termasuk PKB ini)</small></label><input id="aBel" type="number" step="0.01" value="${(d.sebelum+amt).toFixed(2)}" oninput="bakiCalc()"></div>
+      <div class="full"><div class="sugg" id="aBaki">Baki: -</div>${d.sebelum?`<small style="color:var(--muted)">PKB terdahulu bagi jawatankuasa ini: ${RM(d.sebelum)}</small>`:""}</div>
+      ${d.threshold?`<div class="full"><label class="l">Rujukan ${d.threshold==="MA"?"kebenaran Mesyuarat Agung":"kelulusan Jawatankuasa"} * <small>(Fasal 10.4 — jumlah melebihi ${d.threshold==="MA"?"RM50,000":"RM20,000"})</small></label><input id="aRuj" placeholder="cth: Minit Mesyuarat JK Bil. 3/2026, perkara 5.2"></div>`:""}
+      <div class="full"><label class="l">Ulasan (wajib untuk kuiri / tidak sokong)</label><textarea id="aUl" rows="2"></textarea></div></div>
+      <label class="l">Tandatangan Bendahari</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="pkbAct('pkbReview','sokong','${esc(ref)}')">Sokong &amp; tandatangan</button><button class="btn b-ghost" onclick="pkbAct('pkbReview','kuiri','${esc(ref)}')">Kuiri (kembalikan)</button><button class="btn b-red" onclick="pkbAct('pkbReview','tolak','${esc(ref)}')">Tidak sokong</button></div></div>`;
+    else if(c.decide){ const col=c.slot==="PENGERUSI"?"Pengerusi":"Setiausaha";
+      act=`<div class="act" style="border-color:var(--gold3)"><h4>Bahagian C — Kelulusan ${col}${USER.caps.pemangku?" (b.p.)":""}</h4><p>${d.mode==="TIGA"?"Kelulusan bersama Pengerusi, Setiausaha dan Bendahari diperlukan (Fasal 10.4).":"Kelulusan Pengerusi selepas semakan Bendahari."}${d.rec["Rujukan Kelulusan JK/MA"]?` Rujukan kelulusan: <b>${esc(d.rec["Rujukan Kelulusan JK/MA"])}</b>.`:""}</p>
+      <label class="l">Ulasan (wajib untuk kuiri / tidak lulus)</label><textarea id="aUl" rows="2"></textarea>
+      <label class="l">Tandatangan ${col}</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="pkbAct('pkbDecide','lulus','${esc(ref)}')">Luluskan &amp; tandatangan</button><button class="btn b-ghost" onclick="pkbAct('pkbDecide','kuiri','${esc(ref)}')">Kuiri</button><button class="btn b-red" onclick="pkbAct('pkbDecide','tolak','${esc(ref)}')">Tidak diluluskan</button></div></div>`; }
+    else if(c.pay) act=`<div class="act" style="border-color:var(--gold3)"><h4>Rekod pembayaran &amp; jana Baucar Bayaran</h4>
+      <div class="up"><div><label class="l">Tarikh bayaran *</label><input id="pTar" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div><label class="l">Cara bayaran *</label><select id="pCara">${(CACHE.pkbCara||["Pindahan bank (Transfer)"]).map(x=>`<option>${esc(x)}</option>`).join("")}</select></div>
+      <div><label class="l">Amaun dibayar (RM) *</label><input id="pAmt" type="number" step="0.01" value="${amt.toFixed(2)}"></div>
+      <div><label class="l">No. rujukan transaksi / cek</label><input id="pRuj"></div>
+      <div><label class="l">Bukti bayaran (pilihan)</label><input id="pBukti" type="file" accept="image/*,application/pdf"></div>
+      <div><label class="l">Emel penerima <small>(untuk pengesahan penerimaan)</small></label><input id="pEmel" type="email"></div></div>
+      <label class="l">Tandatangan Bendahari</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="pkbPay('${esc(ref)}')">Rekod bayaran &amp; jana baucar</button></div></div>`;
+    else if(c.close) act=`<div class="act"><h4>Pengesahan penerimaan</h4><p>Penerima boleh mengesahkan penerimaan secara digital melalui pautan di bawah. Jika penerima menandatangani baucar bercetak, muat naik salinannya dan tutup PKB.</p>
+      ${d.linkPenerima?`<div style="display:flex;gap:8px;margin-top:8px"><input readonly value="${esc(d.linkPenerima)}" id="lnkP"><button class="btn b-ghost b-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText($('lnkP').value);toast('Pautan disalin')">Salin</button></div>`:""}
+      <div class="up" style="margin-top:6px"><div><label class="l">Baucar bertandatangan (pilihan)</label><input id="cFail" type="file" accept="image/*,application/pdf"></div><div><label class="l">Catatan</label><input id="cNota"></div></div>
+      <div class="row"><button class="btn b-ghost" onclick="pkbClose('${esc(ref)}')">Tutup sebagai Selesai</button></div></div>`;
+    const sigTick=(n,t)=>n?`✓ ${esc(n)}<small style="display:block;color:var(--muted);font-weight:500">${esc(t||"")}</small>`:`<span style="color:var(--muted)">Belum</span>`;
+    $("drawer").innerHTML=`<div class="dh"><div><h3>${esc(ref)} · ${RM(amt)}</h3><small>${esc(r["Jawatankuasa"])} · ${esc(r["Jenis Perolehan"])} · dimohon ${esc(r["Tarikh Mohon"])}</small></div><div style="display:flex;gap:10px;align-items:center">${pkbBadge(r["Status"])}<button class="x" onclick="closeDrawer()">×</button></div></div>
+    <div class="db">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn b-green b-sm" onclick="pkbPdf('${esc(ref)}','pkb',true)">${svg("eye")}Borang PKB</button><button class="btn b-ghost b-sm" onclick="pkbPdf('${esc(ref)}','pkb',false)">${svg("dl")}PDF</button>${d.hasVoucher?`<button class="btn b-green b-sm" onclick="pkbPdf('${esc(ref)}','baucar',true)">${svg("eye")}Baucar ${esc(r["No. Baucar"])}</button><button class="btn b-ghost b-sm" onclick="pkbPdf('${esc(ref)}','baucar',false)">${svg("dl")}PDF</button>`:""}</div>
+      ${d.own?`<div class="msg info">Ini permohonan anda sendiri. Semakan dan kelulusan perlu dibuat oleh pegawai lain / pemangku.</div>`:""}
+      ${act}
+      ${sec("A. Butiran permohonan")}
+      ${kv([["Pemohon",esc(r["Nama Pemohon"])+` <small style="color:var(--muted)">(${esc(r["Jawatan Pemohon"])}${d.noAhli?" · No. Ahli "+esc(d.noAhli):""})</small>`],["Hubungi",esc(r["Telefon Pemohon"])+" · "+esc(r["Emel Pemohon"])],["Pembekal / penerima",esc(r["Nama Pembekal / Penerima"])],["Bank / no. akaun",esc((r["Bank Penerima"]||"-")+" "+(r["No. Akaun Penerima"]||""))],["Justifikasi",esc(r["Justifikasi"])],["Dokumen berkaitan",esc(r["Dokumen Berkaitan"]||"-")],["Disokong oleh (A.7)",r["Penyokong"]?esc(r["Penyokong"])+(r["Tarikh Disokong"]?` (${esc(r["Jawatan Penyokong"])}) — ${esc(r["Tarikh Disokong"])}`:" — menunggu"):"-"]])}
+      <div class="tblw" style="margin-top:10px"><table class="tbl"><thead><tr><th>Butiran perolehan</th><th style="text-align:right">Kuantiti</th><th style="text-align:right">Harga seunit</th><th style="text-align:right">Jumlah</th></tr></thead><tbody>${d.items.map(i=>`<tr><td>${esc(i.butiran)}</td><td style="text-align:right">${esc(i.kuantiti)} ${esc(i.unit||"")}</td><td style="text-align:right">${RM(i.harga)}</td><td style="text-align:right">${RM(i.jumlah)}</td></tr>`).join("")}<tr><td colspan="3"><b>JUMLAH HARGA</b></td><td style="text-align:right"><b>${RM(amt)}</b></td></tr></tbody></table></div>
+      ${sec("Lampiran ("+d.files.length+")")}
+      ${d.files.length?`<div class="doclist">${d.files.map(f=>`<div class="doc"><div class="ic">${extOf(f.name)}</div><div><b>${esc(f.name)}</b><small>${fsz(f.size)}</small></div><div class="acts"><button class="btn b-ghost b-sm" onclick="pkbFile('${esc(ref)}','${f.id}',true)">Lihat</button></div></div>`).join("")}</div>`:`<div style="color:var(--muted);font-size:.86rem">Tiada lampiran.</div>`}
+      ${sec("B. Semakan Bendahari")}
+      ${kv([["Peruntukan / perbelanjaan / baki",[r["Peruntukan (RM)"],r["Perbelanjaan (RM)"],r["Baki (RM)"]].map(x=>x===""||x==null?"-":RM(x)).join(" / ")],["Disemak oleh",sigTick(r["Disemak Oleh (Bendahari)"],r["Tarikh Semakan"])],["Ulasan",esc(r["Ulasan Bendahari"]||"-")],["Rujukan kelulusan JK/MA",esc(r["Rujukan Kelulusan JK/MA"]||"-")]])}
+      ${sec("C. Kelulusan")}
+      ${kv([["Pengerusi / Timbalan",sigTick(r["Pengerusi"],r["Tarikh Pengerusi"])],["Setiausaha / Penolong"+(d.mode==="TIGA"?"":" (pilihan)"),sigTick(r["Setiausaha"],r["Tarikh Setiausaha"])],["Ulasan pelulus",esc(r["Ulasan Pelulus"]||"-")]])}
+      ${r["No. Baucar"]?sec("D. Pembayaran")+kv([["No. baucar",esc(r["No. Baucar"])],["Tarikh / cara",esc(r["Tarikh Bayaran"])+" · "+esc(r["Cara Bayaran"])],["No. rujukan",esc(r["No. Rujukan Bayaran"]||"-")],["Amaun dibayar",RM(r["Amaun Dibayar (RM)"])],["Dibayar oleh",esc(r["Dibayar Oleh"])],["Pengesahan penerima",esc(r["Penerima Mengesahkan"]||"Belum")]]):""}
+      ${sec("Rekod tindakan")}
+      <div class="card" style="padding:14px 16px">${d.trail.map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem"><b>${esc(t.tindakan)}</b> — ${esc(t.oleh||"")}${t.jawatan?" ("+esc(t.jawatan)+")":""}<small style="display:block;color:var(--muted)">${esc(t.masa)}${t.ulasan?" · "+esc(t.ulasan):""}</small></div>`).join("")}</div>
+    </div>`;
+    if($("aSig")) sigPicker($("aSig"),d.adaTandatangan);
+    if($("aPer")) bakiCalc();
+  }catch(e){ $("drawer").querySelector(".db").innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+}
+function bakiCalc(){ const p=$("aPer").value, b=+$("aBel").value||0; $("aBaki").innerHTML=p===""?"Baki: - <small>(isi peruntukan jika ada)</small>":`Baki: <b>${RM((+p)-b)}</b>${(+p)-b<0?' <span style="color:var(--red)">— melebihi peruntukan</span>':""}`; }
+async function pkbAct(action,op,ref){
+  const ul=($("aUl")||{}).value||"";
+  if(op!=="sokong"&&op!=="lulus"&&!ul.trim()) return toast("Sila isi ulasan.",true);
+  const payload={ref,op,ulasan:ul};
+  try{
+    if(op==="sokong"||op==="lulus") Object.assign(payload,SIGSEL.get());
+    if(action==="pkbReview"&&op==="sokong"){ payload.peruntukan=$("aPer").value; payload.perbelanjaan=$("aBel").value; payload.rujukan=($("aRuj")||{}).value||""; }
+    const label={sokong:"Sokong dan tandatangan PKB ini?",lulus:"Luluskan dan tandatangan PKB ini?",kuiri:"Kembalikan PKB kepada pemohon untuk pembetulan?",tolak:"Tandakan PKB ini sebagai tidak disokong / tidak diluluskan?"}[op];
+    if(!confirm(label)) return;
+    document.querySelectorAll(".act .btn").forEach(b=>b.disabled=true);
+    const j=await api(action,payload); toast(j.message); closeDrawer(); R.pkb();
+  }catch(e){ toast(e.message,true); document.querySelectorAll(".act .btn").forEach(b=>b.disabled=false); }
+}
+async function pkbPay(ref){
+  try{
+    const payload=Object.assign({ref,tarikh:$("pTar").value,cara:$("pCara").value,amaun:$("pAmt").value,rujukan:$("pRuj").value,emelPenerima:$("pEmel").value.trim()},SIGSEL.get());
+    const f=$("pBukti").files[0]; if(f){ if(f.size>10*1048576) return toast("Bukti bayaran melebihi 10 MB.",true); payload.bukti={name:f.name,type:f.type,data:await readB64(f)}; }
+    if(!confirm(`Rekod bayaran ${RM(payload.amaun)} dan jana Baucar Bayaran?`)) return;
+    document.querySelectorAll(".act .btn").forEach(b=>b.disabled=true);
+    const j=await api("pkbPay",payload); toast(j.message);
+    if(j.link){ prompt("Baucar dijana. Salin pautan ini untuk penerima mengesahkan penerimaan bayaran (boleh dihantar melalui WhatsApp):",j.link); }
+    closeDrawer(); R.pkb();
+  }catch(e){ toast(e.message,true); document.querySelectorAll(".act .btn").forEach(b=>b.disabled=false); }
+}
+async function pkbClose(ref){
+  try{ const payload={ref,nota:$("cNota").value}; const f=$("cFail").files[0]; if(f) payload.fail={name:f.name,type:f.type,data:await readB64(f)};
+    if(!confirm("Tutup PKB ini sebagai Selesai?")) return; const j=await api("pkbClose",payload); toast(j.message); closeDrawer(); R.pkb(); }catch(e){ toast(e.message,true); }
+}
+
 /* ---------- SISTEM ---------- */
 R.pengguna=async()=>{
-  const m=$("main"); m.innerHTML=head("Pengguna","Urus akaun AJK yang boleh mengakses laman ini.")+loading();
+  const m=$("main"); m.innerHTML=head("Pengguna","Akaun AJK dan kebenaran mengikut jawatan dalam persatuan.")+loading();
   try{
-    const j=await api("users");
-    m.innerHTML=head("Pengguna","Urus akaun AJK yang boleh mengakses laman ini.")+`
-    <div class="grid2"><div class="tblw"><table class="tbl"><thead><tr><th>Pengguna</th><th>Peranan</th><th></th></tr></thead><tbody>${j.users.map(u=>`<tr><td><span class="nm">${esc(u.nama)}</span><small>${esc(u.username)}</small></td><td>${esc(u.peranan)}</td><td style="text-align:right;white-space:nowrap"><button class="btn b-ghost b-sm" onclick='editUser(${JSON.stringify(u)})'>Ubah</button> ${u.username!==USER.username?`<button class="btn b-red b-sm" onclick="delUser('${esc(u.username)}')">Padam</button>`:""}</td></tr>`).join("")}</tbody></table></div>
+    const j=await api("users"); CACHE.jawatan=j.jawatan;
+    m.innerHTML=head("Pengguna","Akaun AJK dan kebenaran mengikut jawatan dalam persatuan.")+`
+    <div class="grid2"><div class="tblw"><table class="tbl"><thead><tr><th>Pengguna</th><th>Jawatan</th><th></th></tr></thead><tbody>${j.users.map(u=>`<tr><td><span class="nm">${esc(u.nama)}</span><small>${esc(u.username)}${u.emel?" · "+esc(u.emel):""}</small></td><td>${esc(u.jawatan||"-")}${u.caps.admin?`<small style="color:var(--gold6);font-weight:700">Pentadbir Sistem</small>`:""}</td><td style="text-align:right;white-space:nowrap"><button class="btn b-ghost b-sm" onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Ubah</button> ${u.username!==USER.username?`<button class="btn b-red b-sm" onclick="delUser('${esc(u.username)}')">Padam</button>`:""}</td></tr>`).join("")}</tbody></table></div>
     <div class="card"><h3 id="uTitle">Tambah pengguna</h3>
       <label class="l">Nama pengguna</label><input id="uU" autocapitalize="none" placeholder="cth: bendahari">
-      <label class="l">Nama penuh / jawatan</label><input id="uN" placeholder="cth: Dr. Tan Wei Leong (Bendahari)">
-      <label class="l">Peranan</label><select id="uR"><option>Pengurus Keahlian</option><option>AJK</option><option>Pentadbir</option></select>
+      <label class="l">Nama penuh</label><input id="uN" placeholder="cth: Dr. Tan Wei Leong">
+      <label class="l">Jawatan dalam persatuan</label><select id="uJ">${j.jawatan.map(x=>`<option>${esc(x)}</option>`).join("")}</select>
+      <label class="l">Emel <small>(untuk makluman PKB &amp; pendaftaran)</small></label><input id="uE" type="email">
+      <label class="chk"><input type="checkbox" id="uA"> Pentadbir Sistem (urus pengguna, tetapan &amp; dokumen)</label>
       <label class="l" id="uPl">Kata laluan sementara (min. 8 aksara)</label><input id="uP" type="text">
       <div style="display:flex;gap:8px;margin-top:14px"><button class="btn b-green" onclick="saveUser()">Simpan</button><button class="btn b-ghost" onclick="R.pengguna()">Batal</button></div>
-      <div class="msg info" style="margin-top:14px;font-size:.8rem"><b>Pentadbir</b>: semua akses termasuk pengguna, tetapan &amp; perlembagaan.<br><b>Pengurus Keahlian</b> (Bendahari/Setiausaha): sahkan bayaran, luluskan keahlian, muat naik borang.<br><b>AJK</b>: lihat sahaja.</div>
+      <div class="msg info" style="margin-top:14px;font-size:.8rem;line-height:1.6"><b>Kebenaran mengikut jawatan</b><br>
+      • <b>Pengerusi / Timbalan</b>: lulus PKB (slot Pengerusi), muat naik perlembagaan (Pengerusi)<br>
+      • <b>Setiausaha / Penolong</b>: lulus PKB (slot Setiausaha), urus keahlian &amp; dokumen<br>
+      • <b>Bendahari / Penolong</b>: semak PKB (Bahagian B), rekod bayaran &amp; baucar, urus keahlian<br>
+      • <b>AJK, Juruaudit, Penasihat</b>: lihat sahaja<br>
+      Pemangku (Timbalan / Penolong) menandatangani "b.p." pegawai utama. Pengguna tidak boleh menyemak atau meluluskan PKB sendiri.</div>
     </div></div>`;
   }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 };
-function editUser(u){ $("uTitle").textContent="Ubah: "+u.username; $("uU").value=u.username; $("uU").readOnly=true; $("uN").value=u.nama||""; $("uR").value=u.peranan; $("uPl").textContent="Kata laluan baharu (kosongkan jika tidak ditukar)"; }
+function editUser(u){ $("uTitle").textContent="Ubah: "+u.username; $("uU").value=u.username; $("uU").readOnly=true; $("uN").value=u.nama||""; $("uJ").value=u.jawatan||"AJK"; $("uE").value=u.emel||""; $("uA").checked=!!u.caps.admin; $("uPl").textContent="Kata laluan baharu (kosongkan jika tidak ditukar)"; window.scrollTo(0,0); }
 async function saveUser(){
-  try{ await api("userSave",{username:$("uU").value.trim().toLowerCase(),nama:$("uN").value,peranan:$("uR").value,password:$("uP").value}); toast("Pengguna disimpan."); R.pengguna(); }catch(e){ toast(e.message,true); }
+  try{ await api("userSave",{username:$("uU").value.trim().toLowerCase(),nama:$("uN").value,jawatan:$("uJ").value,emel:$("uE").value.trim(),admin:$("uA").checked,password:$("uP").value}); toast("Pengguna disimpan."); R.pengguna(); }catch(e){ toast(e.message,true); }
 }
 async function delUser(u){ if(!confirm(`Padam pengguna "${u}"?`)) return; try{ await api("userDelete",{username:u}); toast("Pengguna dipadam."); R.pengguna(); }catch(e){ toast(e.message,true); } }
 
@@ -518,22 +690,29 @@ R.tetapan=async()=>{
       ${F("URL_WEB","Laman persatuan")}
       ${F("URL_DAFTAR","Portal pendaftaran")}
       ${F("SENARAI_ID","ID Google Sheet SENARAI AHLI DAN YURAN")}
+      ${F("URL_PKB","Pautan borang PKB awam","https://pppkank.github.io/admin/pkb.html")}
+      <label class="l">Mod kelulusan PKB</label><select id="s_PKB_MODE"><option value="TIGA" ${s.PKB_MODE!=="DUA"?"selected":""}>Pengerusi + Setiausaha + Bendahari (Fasal 10.4 perlembagaan)</option><option value="DUA" ${s.PKB_MODE==="DUA"?"selected":""}>Bendahari (semakan) + Pengerusi sahaja</option></select>
       <div style="margin-top:16px"><button class="btn b-green" onclick="saveSet(this)">Simpan tetapan</button></div>
       <div class="msg info" style="margin-top:16px;font-size:.82rem">Folder Drive: <a target="_blank" href="${esc(s.URL_FOLDER_ADMIN)}">Pentadbiran (perlembagaan, borang, log)</a> · <a target="_blank" href="${esc(s.URL_FOLDER_PORTAL)}">Portal Keahlian (resit &amp; borang ahli)</a>. AJK perlu akses Drive untuk membuka folder Penyata Kewangan dan Minit Mesyuarat.</div></div>`;
   }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 };
 async function saveSet(btn){
-  const keys=["URL_KEWANGAN","URL_MINIT","URL_WEB","URL_DAFTAR","SENARAI_ID"], settings={}; keys.forEach(k=>settings[k]=$("s_"+k).value);
+  const keys=["URL_KEWANGAN","URL_MINIT","URL_WEB","URL_DAFTAR","SENARAI_ID","URL_PKB","PKB_MODE"], settings={}; keys.forEach(k=>settings[k]=$("s_"+k).value);
   btn.disabled=true; try{ const j=await api("settingsSave",{settings}); CACHE.settings=j.settings; toast("Tetapan disimpan."); }catch(e){ toast(e.message,true); } btn.disabled=false;
 }
 
 R.akaun=()=>{
-  $("main").innerHTML=head("Akaun Saya",`${esc(USER.nama||"")} · ${esc(USER.username)} · ${esc(USER.peranan)}`)+`<div class="card" style="max-width:460px"><h3>Tukar kata laluan</h3>
+  $("main").innerHTML=head("Akaun Saya",`${esc(USER.nama||"")} · ${esc(USER.username)} · ${esc(USER.peranan||"")}`)+`<div class="card" style="max-width:460px"><h3>Tukar kata laluan</h3>
     <label class="l">Kata laluan semasa</label><input id="cp0" type="password" autocomplete="current-password">
     <label class="l">Kata laluan baharu (min. 8 aksara)</label><input id="cp1" type="password" autocomplete="new-password">
     <label class="l">Ulang kata laluan baharu</label><input id="cp2" type="password" autocomplete="new-password">
-    <div style="margin-top:14px"><button class="btn b-green" onclick="chPw(this)">Tukar kata laluan</button></div></div>`;
+    <div style="margin-top:14px"><button class="btn b-green" onclick="chPw(this)">Tukar kata laluan</button></div></div>
+    <div class="card" style="max-width:560px;margin-top:16px"><h3>Tandatangan digital</h3><p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">Simpan tandatangan anda untuk digunakan semasa menyemak atau meluluskan PKB.</p><div id="mySigNow"></div><div id="mySig"></div>
+    <div style="margin-top:10px"><button class="btn b-green" onclick="saveMySig(this)">Simpan tandatangan</button></div></div>`;
+  window._mySig=SigPad($("mySig"));
+  if(USER.adaTandatangan) api("sigGet").then(j=>{ if(j.data) $("mySigNow").innerHTML=`<div class="sugg" style="margin-bottom:10px">Tandatangan semasa: <img src="${j.data}" style="height:46px;vertical-align:middle;background:#fff;border-radius:6px"></div>`; }).catch(()=>{});
 };
+async function saveMySig(btn){ if(!window._mySig.has()) return toast("Sila lukis tandatangan.",true); btn.disabled=true; try{ await api("sigSave",{signature:window._mySig.png()}); USER.adaTandatangan=true; toast("Tandatangan disimpan."); R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; } }
 async function chPw(btn){
   if($("cp1").value!==$("cp2").value) return toast("Kata laluan baharu tidak sepadan.",true);
   btn.disabled=true; try{ await api("changePassword",{oldPassword:$("cp0").value,newPassword:$("cp1").value}); toast("Kata laluan ditukar."); R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; }
@@ -543,6 +722,7 @@ async function chPw(btn){
 function start(){
   $("login").hidden=true; $("app").hidden=false; buildNav();
   const h=location.hash.slice(1); go(PAGES.some(p=>p.id===h)?h:"utama");
+  api("pkbList").then(j=>{ CACHE.pkbMode=j.mode; setCnt(j.todo,"pkb"); }).catch(()=>{});
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
 if(TOKEN&&USER){ api("me").then(j=>{ USER=j.user; start(); }).catch(()=>{}); }
