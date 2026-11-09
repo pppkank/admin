@@ -707,16 +707,54 @@ async function saveSet(btn){
 
 R.akaun=()=>{
   $("main").innerHTML=head("Akaun Saya",`${esc(USER.nama||"")} · ${esc(USER.username)} · ${esc(USER.peranan||"")}`)+(USER.mustChange?`<div class="msg info" style="max-width:560px;margin-bottom:14px"><b>Sila tukar kata laluan sementara anda</b> sebelum menggunakan Laman Pentadbiran.</div>`:"")+`<div class="card" style="max-width:460px"><h3>Tukar kata laluan</h3>
-    <label class="l">Kata laluan semasa</label><input id="cp0" type="password" autocomplete="current-password">
-    <label class="l">Kata laluan baharu (min. 8 aksara)</label><input id="cp1" type="password" autocomplete="new-password">
-    <label class="l">Ulang kata laluan baharu</label><input id="cp2" type="password" autocomplete="new-password">
+    <label class="l">Kata laluan semasa</label><div class="pw"><input id="cp0" type="password" autocomplete="current-password"><button type="button" onclick="pwT(this)">LIHAT</button></div>
+    <label class="l">Kata laluan baharu (min. 8 aksara)</label><div class="pw"><input id="cp1" type="password" autocomplete="new-password"><button type="button" onclick="pwT(this)">LIHAT</button></div>
+    <label class="l">Ulang kata laluan baharu</label><div class="pw"><input id="cp2" type="password" autocomplete="new-password"><button type="button" onclick="pwT(this)">LIHAT</button></div><div id="pwHint" style="font-size:.8rem;margin-top:6px;color:var(--muted)"></div>
     <div style="margin-top:14px"><button class="btn b-green" onclick="chPw(this)">Tukar kata laluan</button></div></div>
-    <div class="card" style="max-width:560px;margin-top:16px"><h3>Tandatangan digital</h3><p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">Simpan tandatangan anda untuk digunakan semasa menyemak atau meluluskan PKB.</p><div id="mySigNow"></div><div id="mySig"></div>
+    <div class="card" style="max-width:560px;margin-top:16px"><h3>Tandatangan digital</h3><p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">Simpan tandatangan anda untuk digunakan semasa menyemak atau meluluskan PKB.</p><div id="mySigNow"></div>
+    <div class="chips" style="margin-bottom:10px"><button type="button" class="chip on" id="sgTabD" onclick="sigTab('d')">✍️ Lukis</button><button type="button" class="chip" id="sgTabU" onclick="sigTab('u')">🖼️ Muat naik gambar</button></div>
+    <div id="mySig"></div>
+    <div id="sgUp" hidden>
+      <input type="file" id="sgFile" accept="image/*">
+      <p style="font-size:.8rem;color:var(--muted);margin-top:6px">Tandatangan dengan pen gelap di atas kertas putih kosong, kemudian ambil gambar dekat dan jelas. Latar putih akan dibuang secara automatik.</p>
+      <div id="sgPrev" style="margin-top:10px"></div>
+      <label class="l" for="sgThr" id="sgThrL" hidden>Kepekaan pembuangan latar</label><input type="range" id="sgThr" min="-60" max="60" value="0" hidden style="padding:0">
+    </div>
     <div style="margin-top:10px"><button class="btn b-green" onclick="saveMySig(this)">Simpan tandatangan</button></div></div>`;
-  window._mySig=SigPad($("mySig"));
+  window._mySig=SigPad($("mySig")); window._sigUp=null; window._sigMode="d";
+  $("sgFile").onchange=e=>loadSigImg(e.target.files[0]); $("sgThr").oninput=()=>window._sigImg&&procSig();
+  [$("cp1"),$("cp2")].forEach(x=>x.addEventListener("input",()=>{ const a=$("cp1").value,b=$("cp2").value; $("pwHint").innerHTML=!a?"":(a.length<8?'<span style="color:var(--red)">Sekurang-kurangnya 8 aksara</span>':(b&&a!==b?'<span style="color:var(--red)">Kata laluan tidak sepadan</span>':(b?'<span style="color:#1e6b25">✓ Sepadan</span>':""))); }));
   if(USER.adaTandatangan) api("sigGet").then(j=>{ if(j.data) $("mySigNow").innerHTML=`<div class="sugg" style="margin-bottom:10px">Tandatangan semasa: <img src="${j.data}" style="height:46px;vertical-align:middle;background:#fff;border-radius:6px"></div>`; }).catch(()=>{});
 };
-async function saveMySig(btn){ if(!window._mySig.has()) return toast("Sila lukis tandatangan.",true); btn.disabled=true; try{ await api("sigSave",{signature:window._mySig.png()}); USER.adaTandatangan=true; toast("Tandatangan disimpan."); R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; } }
+function pwT(b){ const i=b.previousElementSibling; i.type=i.type==="password"?"text":"password"; b.textContent=i.type==="password"?"LIHAT":"SOROK"; }
+function sigTab(m){ window._sigMode=m; $("sgTabD").classList.toggle("on",m==="d"); $("sgTabU").classList.toggle("on",m==="u"); $("mySig").hidden=m!=="d"; $("sgUp").hidden=m!=="u"; if(m==="d") setTimeout(()=>$("mySig").querySelector(".lk").click(),30); }
+function loadSigImg(f){ if(!f) return; if(!/^image\//.test(f.type)) return toast("Sila pilih fail gambar.",true); if(f.size>12*1048576) return toast("Gambar melebihi 12 MB.",true);
+  const url=URL.createObjectURL(f), im=new Image(); im.onload=()=>{ window._sigImg=im; $("sgThr").hidden=false; $("sgThrL").hidden=false; procSig(); }; im.onerror=()=>toast("Gambar tidak dapat dibaca (cuba JPG/PNG).",true); im.src=url; }
+function procSig(){
+  const im=window._sigImg, s=Math.min(1,1400/Math.max(im.width,im.height)), W=Math.round(im.width*s), H=Math.round(im.height*s);
+  const c=document.createElement("canvas"); c.width=W; c.height=H; const x=c.getContext("2d"); x.drawImage(im,0,0,W,H);
+  const img=x.getImageData(0,0,W,H), d=img.data, hist=new Array(256).fill(0), L=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){ const l=Math.round(.299*d[i*4]+.587*d[i*4+1]+.114*d[i*4+2]); L[i]=l; hist[l]++; }
+  // Ambang Otsu + pelarasan pengguna
+  let sum=0; for(let i=0;i<256;i++) sum+=i*hist[i]; let sB=0,wB=0,best=0,th=160;
+  for(let t=0;t<256;t++){ wB+=hist[t]; if(!wB) continue; const wF=W*H-wB; if(!wF) break; sB+=t*hist[t]; const mB=sB/wB, mF=(sum-sB)/wF, v=wB*wF*(mB-mF)*(mB-mF); if(v>best){best=v;th=t;} }
+  th=Math.max(40,Math.min(235,th+ +$("sgThr").value));
+  let x0=W,y0=H,x1=0,y1=0;
+  for(let y=0;y<H;y++) for(let xx=0;xx<W;xx++){ const i=y*W+xx, l=L[i];
+    if(l>=th){ d[i*4+3]=0; } else { const a=Math.min(255,Math.round((th-l)/th*255*1.6)); d[i*4]=13; d[i*4+1]=42; d[i*4+2]=107; d[i*4+3]=Math.max(a,120);
+      if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  x.putImageData(img,0,0);
+  if(x1<=x0){ $("sgPrev").innerHTML='<div class="msg err">Tandatangan tidak dikesan. Cuba gambar yang lebih jelas atau laraskan kepekaan.</div>'; window._sigUp=null; return; }
+  const p=12; x0=Math.max(0,x0-p); y0=Math.max(0,y0-p); x1=Math.min(W,x1+p); y1=Math.min(H,y1+p);
+  const k=Math.min(1,600/(x1-x0)), o=document.createElement("canvas"); o.width=Math.round((x1-x0)*k); o.height=Math.round((y1-y0)*k);
+  o.getContext("2d").drawImage(c,x0,y0,x1-x0,y1-y0,0,0,o.width,o.height);
+  if((x1-x0)*(y1-y0)>W*H*.85) toast("Latar mungkin tidak dibuang sepenuhnya — cuba laraskan kepekaan.",true);
+  window._sigUp=o.toDataURL("image/png");
+  $("sgPrev").innerHTML=`<div class="sugg">Pratonton (latar telus):<div style="margin-top:8px;background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0/16px 16px;border-radius:8px;padding:10px;text-align:center"><img src="${window._sigUp}" style="max-height:110px;max-width:100%"></div></div>`;
+}
+async function saveMySig(btn){
+  let sig=null; if(window._sigMode==="u"){ sig=window._sigUp; if(!sig) return toast("Sila muat naik gambar tandatangan.",true); } else { if(!window._mySig.has()) return toast("Sila lukis tandatangan.",true); sig=window._mySig.png(); }
+  btn.disabled=true; try{ await api("sigSave",{signature:sig}); USER.adaTandatangan=true; toast("Tandatangan disimpan."); R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; } }
 async function chPw(btn){
   if($("cp1").value!==$("cp2").value) return toast("Kata laluan baharu tidak sepadan.",true);
   btn.disabled=true; try{ await api("changePassword",{oldPassword:$("cp0").value,newPassword:$("cp1").value}); toast("Kata laluan ditukar."); const was=USER.mustChange; USER.mustChange=false; try{sessionStorage.setItem("pppkank_user",JSON.stringify(USER))}catch(e){} was?go("utama"):R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; }
