@@ -615,6 +615,11 @@ async function openPkb(ref){
       ${r["No. Baucar"]?sec("D. Pembayaran")+kv([["No. baucar",esc(r["No. Baucar"])],["Tarikh / cara",esc(r["Tarikh Bayaran"])+" · "+esc(r["Cara Bayaran"])],["No. rujukan",esc(r["No. Rujukan Bayaran"]||"-")],["Amaun dibayar",RM(r["Amaun Dibayar (RM)"])],["Dibayar oleh",esc(r["Dibayar Oleh"])],["Pengesahan penerima",esc(r["Penerima Mengesahkan"]||"Belum")]]):""}
       ${sec("Rekod tindakan")}
       <div class="card" style="padding:14px 16px">${d.trail.map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem"><b>${esc(t.tindakan)}</b> — ${esc(t.oleh||"")}${t.jawatan?" ("+esc(t.jawatan)+")":""}<small style="display:block;color:var(--muted)">${esc(t.masa)}${t.ulasan?" · "+esc(t.ulasan):""}</small></div>`).join("")}</div>
+      ${CAP("admin")?`<details class="card" style="margin-top:18px;border-color:#f0c4c0"><summary style="color:var(--red)">Zon bahaya — padam PKB</summary>
+        <p style="font-size:.84rem;color:var(--muted);margin-top:10px">Untuk PKB ujian atau rekod yang dicipta secara silap sahaja. Untuk permohonan sebenar, gunakan status Tidak Diluluskan / Dibatalkan supaya rekod kewangan kekal. Pemadaman direkodkan dalam Log Aktiviti.</p>
+        <label class="l">Sebab pemadaman *</label><input id="delWhy" placeholder="cth: PKB ujian sistem">
+        <label class="l">Taip <b>${esc(ref)}</b> untuk mengesahkan</label><input id="delConf" autocomplete="off">
+        <div class="row" style="margin-top:12px"><button class="btn b-red" onclick="pkbDel('${esc(ref)}')">Padam PKB ini</button></div></details>`:""}
     </div>`;
     if($("aSig")) sigPicker($("aSig"),d.adaTandatangan);
     if($("aPer")) bakiCalc();
@@ -644,6 +649,12 @@ async function pkbPay(ref){
     if(j.link){ prompt("Baucar dijana. Salin pautan ini untuk penerima mengesahkan penerimaan bayaran (boleh dihantar melalui WhatsApp):",j.link); }
     closeDrawer(); R.pkb();
   }catch(e){ toast(e.message,true); document.querySelectorAll(".act .btn").forEach(b=>b.disabled=false); }
+}
+async function pkbDel(ref){
+  if($("delConf").value.trim()!==ref) return toast("Taip No. Siri PKB dengan tepat untuk mengesahkan.",true);
+  if(!$("delWhy").value.trim()) return toast("Sila nyatakan sebab.",true);
+  if(!confirm(`Padam ${ref} secara kekal daripada sistem?`)) return;
+  try{ const j=await api("pkbDelete",{ref,confirm:$("delConf").value.trim(),sebab:$("delWhy").value.trim()}); toast(j.message); closeDrawer(); R.pkb(); }catch(e){ toast(e.message,true); }
 }
 async function pkbClose(ref){
   try{ const payload={ref,nota:$("cNota").value}; const f=$("cFail").files[0]; if(f) payload.fail={name:f.name,type:f.type,data:await readB64(f)};
