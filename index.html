@@ -179,8 +179,14 @@ details.card summary::after{content:"+";font-size:1.2rem}details.card[open] summ
     <div class="pw"><input id="lp" type="password" autocomplete="current-password" required><button type="button" onclick="const i=$('lp');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'LIHAT':'SOROK'">LIHAT</button></div>
     <button class="btn b-green" id="lbtn">Log Masuk</button>
     <div id="lmsg"></div>
-    <p class="s" style="margin-top:18px;margin-bottom:0">Ahli persatuan? <a href="pkb.html" style="color:var(--g7);font-weight:800">Mohon kelulusan belanja (PKB) →</a></p>
+    <p class="s" style="margin-top:12px;margin-bottom:0"><a href="#" onclick="showForgot();return false" style="color:var(--g7);font-weight:700">Lupa kata laluan?</a></p>
+    <p class="s" style="margin-top:14px;margin-bottom:0">Ahli persatuan? <a href="pkb.html" style="color:var(--g7);font-weight:800">Mohon kelulusan belanja (PKB) →</a></p>
   </form>
+</section>
+
+<!-- ============ LUPA / SET SEMULA KATA LALUAN ============ -->
+<section id="forgot" hidden style="min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,var(--g9),var(--g7))">
+  <div class="lcard" id="fgCard"></div>
 </section>
 
 <!-- ============ APLIKASI ============ -->
@@ -760,6 +766,38 @@ async function chPw(btn){
   btn.disabled=true; try{ await api("changePassword",{oldPassword:$("cp0").value,newPassword:$("cp1").value}); toast("Kata laluan ditukar."); const was=USER.mustChange; USER.mustChange=false; try{sessionStorage.setItem("pppkank_user",JSON.stringify(USER))}catch(e){} was?go("utama"):R.akaun(); }catch(e){ toast(e.message,true); btn.disabled=false; }
 }
 
+/* ---------- LUPA KATA LALUAN ---------- */
+const pwBox=(id,ph)=>`<div class="pw"><input id="${id}" type="password" autocomplete="new-password" placeholder="${ph||""}"><button type="button" onclick="const i=this.previousElementSibling;i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'LIHAT':'SOROK'">LIHAT</button></div>`;
+function backToLogin(){ history.replaceState(null,"",location.pathname); $("forgot").hidden=true; $("login").hidden=false; }
+function showForgot(){
+  $("login").hidden=true; $("forgot").hidden=false;
+  $("fgCard").innerHTML=`<img src="${document.querySelector('.lcard img').src}" alt=""><h1>Lupa kata laluan</h1><p class="s">Masukkan nama pengguna atau emel berdaftar. Pautan set semula akan dihantar ke emel akaun anda.</p>
+    <label class="l">Nama pengguna atau emel</label><input id="fgId" autocapitalize="none" value="${esc($("lu").value)}">
+    <button class="btn b-green" id="fgBtn">Hantar pautan set semula</button><div id="fgMsg"></div>
+    <p class="s" style="margin-top:14px;margin-bottom:0"><a href="#" onclick="backToLogin();return false" style="color:var(--g7);font-weight:700">← Kembali ke log masuk</a></p>
+    <p class="s" style="font-size:.78rem;margin-top:10px">Tiada emel berdaftar? Hubungi Pentadbir Sistem untuk menetapkan semula kata laluan anda.</p>`;
+  $("fgBtn").onclick=async()=>{ const b=$("fgBtn"); b.disabled=true; b.textContent="Menghantar…";
+    try{ const j=await api("forgot",{id:$("fgId").value.trim()}); $("fgMsg").innerHTML=`<div class="msg ok">${esc(j.message)}</div>`; b.textContent="Dihantar"; }
+    catch(e){ $("fgMsg").innerHTML=`<div class="msg err">${esc(e.message)}</div>`; b.disabled=false; b.textContent="Hantar pautan set semula"; } };
+}
+async function showReset(token){
+  $("login").hidden=true; $("forgot").hidden=false; const logo=document.querySelector('.lcard img').src;
+  $("fgCard").innerHTML=`<img src="${logo}" alt=""><h1>Kata laluan baharu</h1><div class="loading"><div class="spin"></div>Menyemak pautan…</div>`;
+  try{
+    const j=await api("resetPw",{token,check:true});
+    $("fgCard").innerHTML=`<img src="${logo}" alt=""><h1>Kata laluan baharu</h1><p class="s">Akaun: <b>${esc(j.username)}</b></p>
+      <label class="l">Kata laluan baharu (min. 8 aksara)</label>${pwBox("rp1")}
+      <label class="l">Ulang kata laluan baharu</label>${pwBox("rp2")}
+      <button class="btn b-green" id="rpBtn">Tetapkan kata laluan</button><div id="rpMsg"></div>`;
+    $("rpBtn").onclick=async()=>{ const a=$("rp1").value,b2=$("rp2").value;
+      if(a.length<8) return $("rpMsg").innerHTML=`<div class="msg err">Kata laluan mesti sekurang-kurangnya 8 aksara.</div>`;
+      if(a!==b2) return $("rpMsg").innerHTML=`<div class="msg err">Kata laluan tidak sepadan.</div>`;
+      $("rpBtn").disabled=true;
+      try{ const k=await api("resetPw",{token,password:a}); backToLogin(); $("lu").value=j.username; $("lmsg").innerHTML=`<div class="msg ok">${esc(k.message)}</div>`; }
+      catch(e){ $("rpMsg").innerHTML=`<div class="msg err">${esc(e.message)}</div>`; $("rpBtn").disabled=false; } };
+  }catch(e){ $("fgCard").innerHTML=`<img src="${logo}" alt=""><h1>Pautan tidak sah</h1><div class="msg err">${esc(e.message)}</div><button class="btn b-green" onclick="showForgot()">Mohon pautan baharu</button>`; }
+}
+
 /* ---------- MULA ---------- */
 function start(){
   $("login").hidden=true; $("app").hidden=false; buildNav();
@@ -767,7 +805,8 @@ function start(){
   api("pkbList").then(j=>{ CACHE.pkbMode=j.mode; setCnt(j.todo,"pkb"); }).catch(()=>{});
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
-if(TOKEN&&USER){ api("me").then(j=>{ USER=j.user; start(); }).catch(()=>{}); }
+const RESET_TOK=new URLSearchParams(location.search).get("reset");
+if(RESET_TOK){ showReset(RESET_TOK); } else if(TOKEN&&USER){ api("me").then(j=>{ USER=j.user; start(); }).catch(()=>{}); }
 </script>
 </body>
 </html>
