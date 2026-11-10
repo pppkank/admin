@@ -163,6 +163,7 @@ details.card summary::after{content:"+";font-size:1.2rem}details.card[open] summ
   .kv{grid-template-columns:1fr}.kv .k{border-top:1px solid var(--line)!important;padding-bottom:2px}.kv .v{border-top:0!important;padding-top:2px}
   .cur{grid-template-columns:1fr}.doc{grid-template-columns:auto 1fr}.doc .acts{grid-column:1/-1;justify-content:flex-start}
 }
+.xtabs{display:flex;gap:6px;margin:-4px 0 16px;border-bottom:1.5px solid var(--line);flex-wrap:wrap}.xtabs button{font:inherit;font-weight:800;font-size:.9rem;background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);cursor:pointer;margin-bottom:-1.5px}.xtabs button.on{color:var(--g8);border-bottom-color:var(--gold)}.xtabs i{font-style:normal;background:var(--gold);color:#fff;border-radius:999px;padding:1px 7px;font-size:.72rem;margin-left:4px}
 </style>
 </head>
 <body>
@@ -180,7 +181,7 @@ details.card summary::after{content:"+";font-size:1.2rem}details.card[open] summ
     <button class="btn b-green" id="lbtn">Log Masuk</button>
     <div id="lmsg"></div>
     <p class="s" style="margin-top:12px;margin-bottom:0"><a href="#" onclick="showForgot();return false" style="color:var(--g7);font-weight:700">Lupa kata laluan?</a></p>
-    <p class="s" style="margin-top:14px;margin-bottom:0">Ahli persatuan? <a href="pkb.html" style="color:var(--g7);font-weight:800">Mohon kelulusan belanja (PKB) →</a></p>
+    <p class="s" style="margin-top:14px;margin-bottom:0">Ahli persatuan? <a href="pkb.html" style="color:var(--g7);font-weight:800">PKB &amp; tuntutan bayaran balik →</a></p>
   </form>
 </section>
 
@@ -264,7 +265,7 @@ const PAGES=[
   {id:"utama",t:"Utama",ic:"home"},
   {id:"pendaftaran",t:"Pendaftaran",ic:"reg",cnt:true},
   {id:"ahli",t:"Senarai Ahli",ic:"users"},
-  {id:"pkb",t:"Perbelanjaan (PKB)",ic:"money",cnt:true},
+  {id:"pkb",t:"Perbelanjaan",ic:"money",cnt:true},
   {sep:"Dokumen"},
   {id:"perlembagaan",t:"Perlembagaan",ic:"book"},
   {id:"borang",t:"Borang",ic:"file"},
@@ -317,7 +318,7 @@ R.utama=async()=>{
           ${L(s.URL_MINIT,"minit","Minit Mesyuarat","Folder Google Drive")}
           ${L(s.URL_SHEET_DAFTAR,"sheet","Sheet Pendaftaran","Kemas kini manual")}
           ${L(s.URL_SHEET_SENARAI,"sheet","Sheet Senarai Ahli","Kemas kini manual")}
-          ${L(s.URL_PKB,"form","Borang PKB","Permohonan kelulusan belanja")}
+          ${L(s.URL_PKB,"form","PKB & Tuntutan","Kelulusan belanja & bayaran balik")}
           ${L(s.URL_SHEET_PKB,"sheet","Sheet Perbelanjaan","Rekod PKB & baucar")}
         </div>
         <div style="margin-top:14px">${d.perlembagaan?`<a class="lnk" style="cursor:pointer" onclick="openDoc('${d.perlembagaan.id}')"><i>${svg("book")}</i><span><b>Perlembagaan semasa</b><small>${esc(d.perlembagaan.versi)}${d.perlembagaan.kuatkuasa?" · berkuat kuasa "+esc(d.perlembagaan.kuatkuasa):""}</small></span></a>`:`<a class="lnk" style="cursor:pointer" onclick="go('perlembagaan')"><i>${svg("book")}</i><span><b>Perlembagaan</b><small>Belum dimuat naik</small></span></a>`}</div>
@@ -529,12 +530,12 @@ const RM=n=>"RM"+Number(n||0).toLocaleString("en-MY",{minimumFractionDigits:2,ma
 let PKB_F="todo", PKB_Q="", PKB_Y="";
 function myTodo(r){ const c=USER.caps||{}; return (c.kewangan&&["Menunggu Semakan","Diluluskan","Dibayar"].includes(r.status))||(c.slot==="PENGERUSI"&&r.status==="Menunggu Kelulusan"&&!r.pengerusi)||(c.slot==="SETIAUSAHA"&&r.status==="Menunggu Kelulusan"&&!r.setiausaha&&CACHE.pkbMode==="TIGA"); }
 R.pkb=async()=>{
-  const m=$("main"); const H=()=>head("Perbelanjaan (PKB)","Permohonan Kelulusan Belanja, kelulusan bersama dan rekod pembayaran persatuan.",
-    `<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn b-gold" target="_blank" href="${esc((CACHE.settings||{}).URL_PKB||"pkb.html")}">+ Borang PKB</a>${CACHE.pkbSheet?`<a class="btn b-ghost" target="_blank" href="${esc(CACHE.pkbSheet)}">${svg("sheet")}Sheet</a>`:""}<button class="btn b-ghost" onclick="R.pkb()">Muat semula</button></div>`);
+  const m=$("main"); const H=()=>head("Perbelanjaan","Permohonan Kelulusan Belanja (PKB), kelulusan bersama dan rekod pembayaran persatuan.",
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn b-gold" target="_blank" href="${esc((CACHE.settings||{}).URL_PKB||"pkb.html")}">+ Borang PKB</a>${CACHE.pkbSheet?`<a class="btn b-ghost" target="_blank" href="${esc(CACHE.pkbSheet)}">${svg("sheet")}Sheet</a>`:""}<button class="btn b-ghost" onclick="R.pkb()">Muat semula</button></div>`)+expTabs("pkb");
   m.innerHTML=H()+loading();
   try{
     if(!CACHE.settings) CACHE.settings=(await api("settingsGet")).settings;
-    const j=await api("pkbList"); CACHE.pkb=j.rows; CACHE.pkbMode=j.mode; CACHE.pkbCara=j.cara; CACHE.pkbSheet=j.urlSheet; setCnt(j.todo,"pkb");
+    const j=await api("pkbList"); CACHE.pkb=j.rows; CACHE.pkbMode=j.mode; CACHE.pkbCara=j.cara; CACHE.pkbSheet=j.urlSheet; CACHE.todoP=j.todo; setExpCnt();
     const yrs=[...new Set(j.rows.map(r=>r.tahun).filter(Boolean))].sort().reverse(); if(!PKB_Y) PKB_Y=yrs[0]||String(new Date().getFullYear());
     if(!j.todo && PKB_F==="todo") PKB_F="semua";
     m.innerHTML=H()+`<div class="tiles" id="pkbTiles"></div>
@@ -661,6 +662,163 @@ async function pkbClose(ref){
     if(!confirm("Tutup PKB ini sebagai Selesai?")) return; const j=await api("pkbClose",payload); toast(j.message); closeDrawer(); R.pkb(); }catch(e){ toast(e.message,true); }
 }
 
+/* ---------- TUNTUTAN BAYARAN BALIK ---------- */
+function expTabs(on){ return `<div class="xtabs"><button class="${on==="pkb"?"on":""}" onclick="R.pkb()">📝 PKB <span id="xtP">${CACHE.todoP?`<i>${CACHE.todoP}</i>`:""}</span></button><button class="${on==="tnt"?"on":""}" onclick="R.tnt()">🧾 Tuntutan bayaran balik <span id="xtT">${CACHE.todoT?`<i>${CACHE.todoT}</i>`:""}</span></button></div>`; }
+function setExpCnt(){ setCnt((CACHE.todoP||0)+(CACHE.todoT||0),"pkb"); }
+let TNT_F="todo", TNT_Q="", TNT_Y="";
+function myTodoT(r){ const c=USER.caps||{}; return (c.kewangan&&["Menunggu Semakan","Diluluskan","Dibayar"].includes(r.status))||(c.slot==="PENGERUSI"&&r.status==="Menunggu Kelulusan"); }
+R.tnt=async()=>{
+  const m=$("main"); const tntUrl=((CACHE.settings||{}).URL_PKB||"pkb.html")+"?jenis=tuntutan";
+  const H=()=>head("Perbelanjaan","Tuntutan bayaran balik oleh ahli: semakan Bendahari, kelulusan Pengerusi dan bayaran.",
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn b-gold" target="_blank" href="${esc(tntUrl)}">+ Borang tuntutan</a>${CACHE.pkbSheet?`<a class="btn b-ghost" target="_blank" href="${esc(CACHE.pkbSheet)}">${svg("sheet")}Sheet</a>`:""}<button class="btn b-ghost" onclick="R.tnt()">Muat semula</button></div>`)+expTabs("tnt");
+  m.innerHTML=H()+loading();
+  try{
+    if(!CACHE.settings) CACHE.settings=(await api("settingsGet")).settings;
+    const j=await api("tntList"); CACHE.tnt=j.rows; CACHE.pkbCara=j.cara; CACHE.tntRates=j.rates; CACHE.todoT=j.todo; setExpCnt();
+    const yrs=[...new Set(j.rows.map(r=>r.tahun).filter(Boolean))].sort().reverse(); if(!TNT_Y) TNT_Y=yrs[0]||String(new Date().getFullYear());
+    if(!j.todo && TNT_F==="todo") TNT_F="semua";
+    const canRate=CAP("admin")||CAP("kewangan"); const R0=j.rates;
+    m.innerHTML=H()+`<div class="tiles" id="tntTiles"></div>
+    <div class="tools"><div class="chips" id="tntChips"></div><select id="tntY" style="max-width:110px">${(yrs.length?yrs:[TNT_Y]).map(y=>`<option ${y===TNT_Y?"selected":""}>${y}</option>`).join("")}</select><input id="tntQ" placeholder="Cari no. tuntutan / penuntut / aktiviti…" value="${esc(TNT_Q)}"></div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>No. Tuntutan</th><th>Penuntut / Aktiviti</th><th>PKB</th><th style="text-align:right">Dituntut</th><th style="text-align:right">Disahkan</th><th>Status</th></tr></thead><tbody id="tntBody"></tbody></table></div>
+    <details class="card" style="margin-top:18px"><summary><b>Kadar elaun tuntutan</b> <small style="color:var(--muted);font-weight:500">· ${esc(R0.sumber||"")}</small></summary>
+      <div style="margin-top:12px" id="rateBox">${rateForm(R0,canRate)}</div></details>
+    <p class="note" style="font-size:.8rem;color:var(--muted);margin-top:10px">Aliran: semakan Bendahari / Penolong Bendahari → kelulusan Pengerusi / Timbalan Pengerusi → bayaran. Penuntut tidak boleh menyemak, meluluskan atau membayar tuntutan sendiri. PKB tidak wajib bagi perbelanjaan kecil, kecemasan atau kelulusan bersyarat Bendahari.</p>`;
+    $("tntQ").oninput=e=>{TNT_Q=e.target.value;drawTnt()}; $("tntY").onchange=e=>{TNT_Y=e.target.value;drawTnt()}; drawTnt();
+  }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+};
+function drawTnt(){
+  const all=CACHE.tnt, yr=all.filter(r=>r.tahun===TNT_Y);
+  const sum=(a,k)=>a.reduce((x,r)=>x+(r[k]||0),0);
+  $("tntTiles").innerHTML=`<div class="tile hl"><b>${all.filter(myTodoT).length}</b><span>Perlu tindakan saya</span></div>
+    <div class="tile"><b>${all.filter(r=>["Menunggu Semakan","Menunggu Kelulusan","Dikuiri"].includes(r.status)).length}</b><span>Dalam proses</span></div>
+    <div class="tile"><b style="font-size:1.5rem">${RM(sum(all.filter(r=>r.status==="Diluluskan"),"disahkan"))}</b><span>Diluluskan, belum dibayar</span></div>
+    <div class="tile"><b style="font-size:1.5rem">${RM(sum(yr.filter(r=>["Dibayar","Selesai"].includes(r.status)),"dibayar"))}</b><span>Telah dibayar ${esc(TNT_Y)}</span></div>`;
+  const F={todo:["Perlu tindakan saya",myTodoT],semua:["Semua",()=>true],proses:["Dalam proses",r=>["Menunggu Semakan","Menunggu Kelulusan","Dikuiri"].includes(r.status)],
+    lulus:["Diluluskan (belum bayar)",r=>r.status==="Diluluskan"],bayar:["Dibayar",r=>r.status==="Dibayar"],selesai:["Selesai",r=>r.status==="Selesai"],tolak:["Ditolak / batal",r=>["Tidak Diluluskan","Dibatalkan"].includes(r.status)]};
+  $("tntChips").innerHTML=Object.entries(F).map(([k,[t,f]])=>`<button class="chip${TNT_F===k?" on":""}" onclick="TNT_F='${k}';drawTnt()">${t} (${all.filter(f).length})</button>`).join("");
+  const q=TNT_Q.toLowerCase(); const rows=all.filter(F[TNT_F][1]).filter(r=>TNT_F==="todo"||TNT_F==="proses"||TNT_F==="lulus"||r.tahun===TNT_Y).filter(r=>!q||(r.ref+r.nama+r.aktiviti+r.pkb).toLowerCase().includes(q));
+  $("tntBody").innerHTML=rows.map(r=>`<tr class="click" onclick="openTnt('${esc(r.ref)}')"><td><b>${esc(r.ref)}</b><small>${esc(r.tarikh)}</small></td><td><span class="nm">${esc(r.nama)}</span><small>${esc(r.aktiviti)}</small></td><td>${r.pkb?esc(r.pkb):`<small style="color:var(--muted)">Tiada</small>`}</td><td style="text-align:right;font-weight:700">${RM(r.jumlah)}</td><td style="text-align:right">${r.disahkan==null?"-":RM(r.disahkan)}</td><td>${pkbBadge(r.status)}${r.baucar?`<small>${esc(r.baucar)}</small>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">Tiada tuntutan dalam kategori ini.</td></tr>`;
+}
+function rateForm(R0,can){
+  const dis=can?"":"disabled", n=(id,v)=>`<input id="${id}" type="number" step="0.01" min="0" value="${esc(v)}" ${dis} style="max-width:110px">`;
+  return `<div class="tblw"><table class="tbl"><thead><tr><th>Kenderaan</th><th>500 km pertama (RM/km)</th><th>501 km &amp; seterusnya (RM/km)</th></tr></thead><tbody>
+    <tr><td>Kereta</td><td>${n("rk0",R0.kereta[0])}</td><td>${n("rk1",R0.kereta[1])}</td></tr><tr><td>Motosikal</td><td>${n("rm0",R0.motor[0])}</td><td>${n("rm1",R0.motor[1])}</td></tr></tbody></table></div>
+    <div class="tblw" style="margin-top:10px"><table class="tbl"><thead><tr><th>Kumpulan gred</th><th>Elaun makan (RM/hari)</th><th>Had sewa hotel (RM/malam, 0 = sebenar)</th></tr></thead><tbody>
+    ${R0.gred.map((g,i)=>`<tr data-k="${esc(g.k)}"><td><input class="gl" value="${esc(g.label)}" ${dis}></td><td>${n("ge"+i,g.em)}</td><td>${n("gh"+i,g.hotel)}</td></tr>`).join("")}</tbody></table></div>
+    <div class="up" style="margin-top:10px"><div><label class="l">Elaun lojing (RM/malam, semua gred)</label>${n("rlj",R0.lojing)}</div><div><label class="l">Sumber / pekeliling</label><input id="rsrc" value="${esc(R0.sumber||"")}" ${dis}></div></div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:8px">Elaun harian dikira ½ elaun makan. Perubahan kadar hanya terpakai kepada tuntutan baharu; tuntutan sedia ada menyimpan kadar semasa ia dihantar.</p>
+    ${can?`<div class="row"><button class="btn b-green" onclick="saveRates(this)">Simpan kadar</button><button class="btn b-ghost" onclick="saveRates(this,true)">Kembali ke kadar asal WP1.4</button></div>`:`<p style="font-size:.8rem;color:var(--muted)">Hanya Bendahari atau Pentadbir boleh mengubah kadar.</p>`}`;
+}
+async function saveRates(btn,reset){
+  const v=id=>+$(id).value; const R0=CACHE.tntRates;
+  const rates={sumber:$("rsrc").value,kereta:[v("rk0"),v("rk1")],motor:[v("rm0"),v("rm1")],lojing:v("rlj"),
+    gred:[...document.querySelectorAll("#rateBox tr[data-k]")].map((tr,i)=>({k:tr.dataset.k,label:tr.querySelector(".gl").value,em:v("ge"+i),hotel:v("gh"+i)}))};
+  if(!confirm(reset?"Tetapkan semula semua kadar kepada nilai asal WP1.4?":"Simpan kadar elaun baharu?")) return;
+  btn.disabled=true; try{ const j=await api("tntRatesSave",reset?{reset:true}:{rates}); CACHE.tntRates=j.rates; $("rateBox").innerHTML=rateForm(j.rates,true); toast("Kadar disimpan."); }catch(e){ toast(e.message,true); btn.disabled=false; }
+}
+async function tntPdf(ref,kind,view){ toast("Menyediakan PDF…"); try{ openBlob(await api("tntPdf",{ref,kind}),view); }catch(e){ toast(e.message,true); } }
+async function tntFile(ref,id,view){ toast("Memuatkan fail…"); try{ openBlob(await api("tntFile",{ref,id}),view); }catch(e){ toast(e.message,true); } }
+async function openTnt(ref){
+  $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>${esc(ref)}</h3></div><button class="x" onclick="closeDrawer()">×</button></div><div class="db">${loading()}</div>`;
+  try{
+    const d=await api("tntDetail",{ref}); const r=d.rec, c=d.can, C=d.calc||{}, E=C.elaun||{}; const amt=+r["Jumlah Dituntut (RM)"]||0, sah=r["Amaun Disahkan (RM)"]===""||r["Amaun Disahkan (RM)"]==null?null:+r["Amaun Disahkan (RM)"];
+    const kv=rows=>`<div class="kv">${rows.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${v}</div>`).join("")}</div>`;
+    const sec=t=>`<div class="kat" style="margin-top:18px">${t}</div>`;
+    const sigTick=(n,t)=>n?`✓ ${esc(n)}<small style="display:block;color:var(--muted);font-weight:500">${esc(t||"")}</small>`:`<span style="color:var(--muted)">Belum</span>`;
+    let pk="";
+    if(d.pkb){ const used=d.pkb.tuntutanLain.reduce((a,b)=>a+b.jumlah,0);
+      pk=`<div class="msg ${d.pkb.ada&&used+amt<=d.pkb.jumlah?"ok":"info"}" style="margin-top:10px">Di bawah <b>${esc(d.pkb.ref)}</b>${d.pkb.ada?` (${esc(d.pkb.jawatankuasa)}, ${esc(d.pkb.status)}) — jumlah PKB <b>${RM(d.pkb.jumlah)}</b>. Tuntutan lain di bawah PKB ini: ${d.pkb.tuntutanLain.length?d.pkb.tuntutanLain.map(t=>`${esc(t.ref)} ${RM(t.jumlah)} (${esc(t.status)})`).join(", "):"tiada"}.${used+amt>d.pkb.jumlah?` <b style="color:var(--red)">Jumlah keseluruhan ${RM(used+amt)} melebihi PKB.</b>`:""}`:" — PKB tidak lagi wujud dalam rekod."}</div>`; }
+    let act="";
+    if(c.review) act=`<div class="act" style="border-color:var(--gold3)"><h4>Semakan Bendahari</h4><p>Semak resit, jarak perjalanan dan kelayakan elaun. Anda boleh mengurangkan amaun yang disahkan (nyatakan sebab).</p>
+      <div class="up"><div><label class="l">Amaun disahkan (RM) *</label><input id="aAmt" type="number" step="0.01" value="${amt.toFixed(2)}"></div>
+      ${d.threshold?`<div><label class="l">Rujukan ${d.threshold==="MA"?"kebenaran Mesyuarat Agung":"kelulusan Jawatankuasa"} *</label><input id="aRuj" placeholder="cth: Minit JK Bil. 3/2026"></div>`:"<div></div>"}
+      <div class="full"><label class="l">Ulasan (wajib untuk kuiri / tidak sokong / amaun dikurangkan)</label><textarea id="aUl" rows="2"></textarea></div></div>
+      <label class="l">Tandatangan Bendahari</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="tntAct('tntReview','sah','${esc(ref)}')">Sahkan &amp; tandatangan</button><button class="btn b-ghost" onclick="tntAct('tntReview','kuiri','${esc(ref)}')">Kuiri (kembalikan)</button><button class="btn b-red" onclick="tntAct('tntReview','tolak','${esc(ref)}')">Tidak sokong</button></div></div>`;
+    else if(c.decide) act=`<div class="act" style="border-color:var(--gold3)"><h4>Kelulusan Pengerusi${USER.caps.pemangku?" (b.p.)":""}</h4><p>Amaun disahkan Bendahari: <b>${RM(sah)}</b>${r["Ulasan Bendahari"]?` — ${esc(r["Ulasan Bendahari"])}`:""}.</p>
+      <label class="l">Ulasan (wajib untuk kuiri / tidak lulus)</label><textarea id="aUl" rows="2"></textarea>
+      <label class="l">Tandatangan Pengerusi</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="tntAct('tntDecide','lulus','${esc(ref)}')">Luluskan &amp; tandatangan</button><button class="btn b-ghost" onclick="tntAct('tntDecide','kuiri','${esc(ref)}')">Kuiri</button><button class="btn b-red" onclick="tntAct('tntDecide','tolak','${esc(ref)}')">Tidak diluluskan</button></div></div>`;
+    else if(c.pay) act=`<div class="act" style="border-color:var(--gold3)"><h4>Rekod bayaran ke akaun penuntut</h4><p>${esc(r["Bank"])} · <b>${esc(r["No. Akaun"])}</b> · ${esc(r["Nama Pemegang Akaun"])}</p>
+      <div class="up"><div><label class="l">Tarikh bayaran *</label><input id="pTar" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+      <div><label class="l">Cara bayaran *</label><select id="pCara">${(CACHE.pkbCara||["Pindahan bank (Transfer)"]).map(x=>`<option>${esc(x)}</option>`).join("")}</select></div>
+      <div><label class="l">Amaun dibayar (RM) *</label><input id="pAmt" type="number" step="0.01" value="${(sah||0).toFixed(2)}"></div>
+      <div><label class="l">No. rujukan transaksi / cek</label><input id="pRuj"></div>
+      <div class="full"><label class="l">Bukti bayaran (pilihan)</label><input id="pBukti" type="file" accept="image/*,application/pdf"></div></div>
+      <label class="l">Tandatangan Bendahari</label><div id="aSig"></div>
+      <div class="row"><button class="btn b-gold" onclick="tntPay('${esc(ref)}')">Rekod bayaran &amp; jana baucar</button></div></div>`;
+    else if(c.close) act=`<div class="act"><h4>Menunggu pengesahan penerimaan</h4><p>Penuntut telah dimaklumkan melalui emel untuk mengesahkan penerimaan. Pautan penuntut boleh dihantar semula melalui WhatsApp. Jika penuntut menandatangani baucar bercetak, muat naik salinannya dan tutup tuntutan.</p>
+      <div style="display:flex;gap:8px;margin-top:8px"><input readonly value="${esc(d.linkPenuntut)}" id="lnkP"><button class="btn b-ghost b-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText($('lnkP').value);toast('Pautan disalin')">Salin</button></div>
+      <div class="up" style="margin-top:6px"><div><label class="l">Baucar bertandatangan (pilihan)</label><input id="cFail" type="file" accept="image/*,application/pdf"></div><div><label class="l">Catatan</label><input id="cNota"></div></div>
+      <div class="row"><button class="btn b-ghost" onclick="tntClose('${esc(ref)}')">Tutup sebagai Selesai</button></div></div>`;
+    const blk=[];
+    if(d.items.length) blk.push(`<div class="tblw" style="margin-top:10px"><table class="tbl"><thead><tr><th>(a) Perbelanjaan</th><th>Resit</th><th style="text-align:right">Amaun</th></tr></thead><tbody>${d.items.map(i=>`<tr><td>${esc(i.tarikh)} · ${esc(i.butiran)}</td><td>${esc(i.resit||"-")}</td><td style="text-align:right">${RM(i.amaun)}</td></tr>`).join("")}</tbody></table></div>`);
+    if(d.trips.length) blk.push(`<div class="tblw" style="margin-top:10px"><table class="tbl"><thead><tr><th>(b) Perjalanan</th><th>Kenderaan</th><th style="text-align:right">km</th></tr></thead><tbody>${d.trips.map(t=>`<tr><td>${esc(t.tarikh)} · ${esc(t.dari)} → ${esc(t.ke)}</td><td>${esc(t.kenderaan)}</td><td style="text-align:right">${esc(t.km)}</td></tr>`).join("")}<tr><td colspan="2">Elaun perjalanan kenderaan</td><td style="text-align:right"><b>${RM(C.b)}</b></td></tr></tbody></table></div>`);
+    if(d.lain.length) blk.push(`<div class="tblw" style="margin-top:10px"><table class="tbl"><thead><tr><th>(c) Tol / parkir / tambang</th><th style="text-align:right">Amaun</th></tr></thead><tbody>${d.lain.map(l=>`<tr><td>${esc(l.tarikh)} · ${esc(l.jenis)}${l.butiran?" — "+esc(l.butiran):""}</td><td style="text-align:right">${RM(l.amaun)}</td></tr>`).join("")}</tbody></table></div>`);
+    const el=[]; if(E.em) el.push(`Elaun makan ${E.em} hari × ${RM(E.emRate)} = ${RM(E.emJumlah)}`); if(E.eh) el.push(`Elaun harian ${E.eh} hari × ${RM(E.emRate/2)} = ${RM(E.ehJumlah)}`);
+    if(E.hotelMalam) el.push(`Sewa hotel ${E.hotelMalam} malam, resit ${RM(E.hotelAmaun)}${E.hotelHad>0?` (had ${RM(E.hotelHad)} semalam)`:""} → ${RM(E.hotelLayak)}`); if(E.lojing) el.push(`Elaun lojing ${E.lojing} malam × ${RM(E.lojingRate)} = ${RM(E.lojingJumlah)}`);
+    if(el.length) blk.push(`<div class="card" style="padding:12px 14px;margin-top:10px;font-size:.88rem"><b>(d) Elaun — ${esc(r["Kumpulan Gred"]||"-")}</b><br>${el.join("<br>")}</div>`);
+    $("drawer").innerHTML=`<div class="dh"><div><h3>${esc(ref)} · ${RM(amt)}</h3><small>${esc(r["Nama Penuntut"])} · ${esc(r["Aktiviti / Tujuan"])} · dihantar ${esc(r["Tarikh Hantar"])}</small></div><div style="display:flex;gap:10px;align-items:center">${pkbBadge(r["Status"])}<button class="x" onclick="closeDrawer()">×</button></div></div>
+    <div class="db">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn b-green b-sm" onclick="tntPdf('${esc(ref)}','borang',true)">${svg("eye")}Borang Tuntutan</button><button class="btn b-ghost b-sm" onclick="tntPdf('${esc(ref)}','borang',false)">${svg("dl")}PDF</button>${d.hasVoucher?`<button class="btn b-green b-sm" onclick="tntPdf('${esc(ref)}','baucar',true)">${svg("eye")}Baucar ${esc(r["No. Baucar"])}</button><button class="btn b-ghost b-sm" onclick="tntPdf('${esc(ref)}','baucar',false)">${svg("dl")}PDF</button>`:""}</div>
+      ${d.own?`<div class="msg info">Ini tuntutan anda sendiri. Semakan, kelulusan dan bayaran perlu dibuat oleh pegawai lain / pemangku.</div>`:""}
+      ${act}
+      ${sec("A–B. Penuntut & butiran")}
+      ${kv([["Penuntut",esc(r["Nama Penuntut"])+` <small style="color:var(--muted)">(${esc(r["Jawatan Persatuan"])}${d.noAhli?" · No. Ahli "+esc(d.noAhli):""})</small>`],["Hubungi",esc(r["Telefon"])+" · "+esc(r["Emel"])],["Akaun bank",esc(r["Bank"])+" "+esc(r["No. Akaun"])+" · "+esc(r["Nama Pemegang Akaun"])],["Aktiviti",esc(r["Aktiviti / Tujuan"])],["Tarikh aktiviti",esc(r["Tarikh Aktiviti"])],["Rujukan PKB",r["Rujukan PKB"]?esc(r["Rujukan PKB"]):"Tiada — "+esc(r["Asas Tanpa PKB"])],["Catatan penuntut",esc(r["Catatan"]||"-")]])}
+      ${pk}
+      ${sec("C–D. Pecahan tuntutan")}
+      ${blk.join("")}
+      <div class="tblw" style="margin-top:10px"><table class="tbl"><tbody><tr><td>(a) ${RM(C.a)} · (b) ${RM(C.b)} · (c) ${RM(C.c)} · (d) ${RM(C.d)}</td><td style="text-align:right"><b>JUMLAH ${RM(amt)}</b></td></tr></tbody></table></div>
+      ${sec("Lampiran ("+d.files.length+")")}
+      ${d.files.length?`<div class="doclist">${d.files.map(f=>`<div class="doc"><div class="ic">${extOf(f.name)}</div><div><b>${esc(f.name)}</b><small>${fsz(f.size)}</small></div><div class="acts"><button class="btn b-ghost b-sm" onclick="tntFile('${esc(ref)}','${f.id}',true)">Lihat</button></div></div>`).join("")}</div>`:`<div style="color:var(--muted);font-size:.86rem">Tiada lampiran.</div>`}
+      ${sec("Semakan & kelulusan")}
+      ${kv([["Amaun disahkan",sah==null?"-":RM(sah)],["Disemak oleh",sigTick(r["Disemak Oleh"],r["Tarikh Semakan"])],["Ulasan Bendahari",esc(r["Ulasan Bendahari"]||"-")],["Diluluskan oleh",sigTick(r["Diluluskan Oleh"],r["Tarikh Diluluskan"])],["Ulasan Pengerusi",esc(r["Ulasan Pelulus"]||"-")]])}
+      ${r["No. Baucar"]?sec("Pembayaran")+kv([["No. baucar",esc(r["No. Baucar"])],["Tarikh / cara",esc(r["Tarikh Bayaran"])+" · "+esc(r["Cara Bayaran"])],["No. rujukan",esc(r["No. Rujukan Bayaran"]||"-")],["Amaun dibayar",RM(r["Amaun Dibayar (RM)"])],["Dibayar oleh",esc(r["Dibayar Oleh"])],["Pengesahan penuntut",esc(r["Penerima Mengesahkan"]||"Belum")]]):""}
+      ${sec("Rekod tindakan")}
+      <div class="card" style="padding:14px 16px">${d.trail.map(t=>`<div style="padding:6px 0;border-bottom:1px solid var(--line);font-size:.86rem"><b>${esc(t.tindakan)}</b> — ${esc(t.oleh||"")}${t.jawatan?" ("+esc(t.jawatan)+")":""}<small style="display:block;color:var(--muted)">${esc(t.masa)}${t.ulasan?" · "+esc(t.ulasan):""}</small></div>`).join("")}</div>
+      ${CAP("admin")?`<details class="card" style="margin-top:18px;border-color:#f0c4c0"><summary style="color:var(--red)">Zon bahaya — padam tuntutan</summary>
+        <p style="font-size:.84rem;color:var(--muted);margin-top:10px">Untuk tuntutan ujian atau rekod silap sahaja. Pemadaman direkodkan dalam Log Aktiviti.</p>
+        <label class="l">Sebab pemadaman *</label><input id="delWhy" placeholder="cth: tuntutan ujian sistem">
+        <label class="l">Taip <b>${esc(ref)}</b> untuk mengesahkan</label><input id="delConf" autocomplete="off">
+        <div class="row" style="margin-top:12px"><button class="btn b-red" onclick="tntDel('${esc(ref)}')">Padam tuntutan ini</button></div></details>`:""}
+    </div>`;
+    if($("aSig")) sigPicker($("aSig"),d.adaTandatangan);
+  }catch(e){ $("drawer").querySelector(".db").innerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+}
+async function tntAct(action,op,ref){
+  const ul=($("aUl")||{}).value||"";
+  if(op!=="sah"&&op!=="lulus"&&!ul.trim()) return toast("Sila isi ulasan.",true);
+  const payload={ref,op,ulasan:ul};
+  try{
+    if(op==="sah"||op==="lulus") Object.assign(payload,SIGSEL.get());
+    if(op==="sah"){ payload.amaun=$("aAmt").value; payload.rujukan=($("aRuj")||{}).value||""; }
+    const label={sah:`Sahkan tuntutan sebanyak ${RM(payload.amaun)} dan tandatangan?`,lulus:"Luluskan dan tandatangan tuntutan ini?",kuiri:"Kembalikan tuntutan kepada penuntut untuk pembetulan?",tolak:"Tandakan tuntutan ini sebagai tidak disokong / tidak diluluskan?"}[op];
+    if(!confirm(label)) return;
+    document.querySelectorAll(".act .btn").forEach(b=>b.disabled=true);
+    const j=await api(action,payload); toast(j.message); closeDrawer(); R.tnt();
+  }catch(e){ toast(e.message,true); document.querySelectorAll(".act .btn").forEach(b=>b.disabled=false); }
+}
+async function tntPay(ref){
+  try{
+    const payload=Object.assign({ref,tarikh:$("pTar").value,cara:$("pCara").value,amaun:$("pAmt").value,rujukan:$("pRuj").value},SIGSEL.get());
+    const f=$("pBukti").files[0]; if(f){ if(f.size>10*1048576) return toast("Bukti bayaran melebihi 10 MB.",true); payload.bukti={name:f.name,type:f.type,data:await readB64(f)}; }
+    if(!confirm(`Rekod bayaran ${RM(payload.amaun)} dan jana Baucar Bayaran?`)) return;
+    document.querySelectorAll(".act .btn").forEach(b=>b.disabled=true);
+    const j=await api("tntPay",payload); toast(j.message); closeDrawer(); R.tnt();
+  }catch(e){ toast(e.message,true); document.querySelectorAll(".act .btn").forEach(b=>b.disabled=false); }
+}
+async function tntDel(ref){
+  if($("delConf").value.trim()!==ref) return toast("Taip No. Tuntutan dengan tepat untuk mengesahkan.",true);
+  if(!$("delWhy").value.trim()) return toast("Sila nyatakan sebab.",true);
+  if(!confirm(`Padam ${ref} secara kekal daripada sistem?`)) return;
+  try{ const j=await api("tntDelete",{ref,confirm:$("delConf").value.trim(),sebab:$("delWhy").value.trim()}); toast(j.message); closeDrawer(); R.tnt(); }catch(e){ toast(e.message,true); }
+}
+async function tntClose(ref){
+  try{ const payload={ref,nota:$("cNota").value}; const f=$("cFail").files[0]; if(f) payload.fail={name:f.name,type:f.type,data:await readB64(f)};
+    if(!confirm("Tutup tuntutan ini sebagai Selesai?")) return; const j=await api("tntClose",payload); toast(j.message); closeDrawer(); R.tnt(); }catch(e){ toast(e.message,true); }
+}
+
 /* ---------- SISTEM ---------- */
 R.pengguna=async()=>{
   const m=$("main"); m.innerHTML=head("Pengguna","Akaun AJK dan kebenaran mengikut jawatan dalam persatuan.")+loading();
@@ -678,11 +836,11 @@ R.pengguna=async()=>{
       <label class="chk"><input type="checkbox" id="uM" checked> Emel makluman akaun kepada pengguna (pautan, nama pengguna, kata laluan sementara &amp; akses)</label>
       <div style="display:flex;gap:8px;margin-top:14px"><button class="btn b-green" onclick="saveUser()">Simpan</button><button class="btn b-ghost" onclick="R.pengguna()">Batal</button></div>
       <div class="msg info" style="margin-top:14px;font-size:.8rem;line-height:1.6"><b>Kebenaran mengikut jawatan</b><br>
-      • <b>Pengerusi / Timbalan</b>: lulus PKB (slot Pengerusi), muat naik perlembagaan (Pengerusi)<br>
+      • <b>Pengerusi / Timbalan</b>: lulus PKB (slot Pengerusi) &amp; tuntutan bayaran balik, muat naik perlembagaan (Pengerusi)<br>
       • <b>Setiausaha / Penolong</b>: lulus PKB (slot Setiausaha), urus keahlian &amp; dokumen<br>
-      • <b>Bendahari / Penolong</b>: semak PKB (Bahagian B), rekod bayaran &amp; baucar, urus keahlian<br>
+      • <b>Bendahari / Penolong</b>: semak PKB (Bahagian B) &amp; tuntutan, rekod bayaran &amp; baucar, kadar elaun, urus keahlian<br>
       • <b>AJK, Juruaudit, Penasihat</b>: lihat sahaja<br>
-      Pemangku (Timbalan / Penolong) menandatangani "b.p." pegawai utama. Pengguna tidak boleh menyemak atau meluluskan PKB sendiri.</div>
+      Pemangku (Timbalan / Penolong) menandatangani "b.p." pegawai utama. Pengguna tidak boleh menyemak, meluluskan atau membayar PKB / tuntutan sendiri.</div>
     </div></div>`;
   }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 };
@@ -813,7 +971,8 @@ async function showReset(token){
 function start(){
   $("login").hidden=true; $("app").hidden=false; buildNav();
   const h=location.hash.slice(1); go(PAGES.some(p=>p.id===h)?h:"utama");
-  api("pkbList").then(j=>{ CACHE.pkbMode=j.mode; setCnt(j.todo,"pkb"); }).catch(()=>{});
+  api("pkbList").then(j=>{ CACHE.pkbMode=j.mode; CACHE.todoP=j.todo; setExpCnt(); }).catch(()=>{});
+  api("tntList").then(j=>{ CACHE.todoT=j.todo; setExpCnt(); }).catch(()=>{});
 }
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDrawer(); });
 const RESET_TOK=new URLSearchParams(location.search).get("reset");
