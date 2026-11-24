@@ -827,31 +827,36 @@ async function tntClose(ref){
 /* ---------- RESIT ---------- */
 R.resit=async()=>{
   const m=$("main");
-  const H=()=>head("Perbelanjaan","Resit rasmi persatuan: dijana automatik selepas bayaran keahlian disahkan, atau secara manual untuk bayaran lain.",
-    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn b-gold" onclick="resitForm()">+ Jana resit manual</button><button class="btn b-ghost" onclick="R.resit()">Muat semula</button></div>`)+expTabs("resit");
+  const H=()=>head("Perbelanjaan","Resit rasmi untuk semua terimaan persatuan. Yuran keahlian dijana automatik; terimaan lain (permukiman, webinar, konsultasi, tajaan…) dijana di sini.",
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn b-gold" onclick="resitForm()">+ Resit terimaan baharu</button><button class="btn b-ghost" onclick="R.resit()">Muat semula</button></div>`)+expTabs("resit");
   m.innerHTML=H()+loading();
   try{
-    const j=await api("resitList"); CACHE.resit=j.rows;
+    const j=await api("resitList"); CACHE.resit=j.rows; CACHE.resitKat=j.kategori; window.RS_K=window.RS_K||"";
     const yr=String(new Date().getFullYear()), sum=j.rows.filter(r=>String(r.tarikh).slice(-4)===yr).reduce((a,r)=>a+r.jumlah,0);
     m.innerHTML=H()+`<div class="tiles"><div class="tile"><b>${j.rows.length}</b><span>Jumlah resit</span></div><div class="tile"><b style="font-size:1.5rem">${RM(sum)}</b><span>Kutipan berresit ${yr}</span></div>
       <div class="tile"><b>${j.rows.filter(r=>/GAGAL/.test(r.dihantar)).length}</b><span>Emel gagal</span></div></div>
-    <div class="tools"><input id="rsQ" placeholder="Cari no. resit / pembayar / rujukan…"></div>
-    <div class="tblw"><table class="tbl"><thead><tr><th>No. Resit</th><th>Diterima daripada</th><th>Rujukan</th><th style="text-align:right">Jumlah</th><th>Emel</th><th></th></tr></thead><tbody id="rsBody"></tbody></table></div>
+    ${(()=>{ const by={}; j.rows.filter(r=>String(r.tarikh).slice(-4)===yr).forEach(r=>{ const k=r.kategori||"Lain-lain"; by[k]=(by[k]||0)+r.jumlah; });
+      const ks=Object.keys(by).sort((a,b)=>by[b]-by[a]); return ks.length?`<div class="card" style="margin-bottom:14px;padding:14px 18px"><b style="font-size:.85rem;color:var(--green-800,#1d4a22)">Kutipan ${yr} mengikut kategori</b><div style="display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:8px;font-size:.88rem">${ks.map(k=>`<span>${esc(k)}: <b>${RM(by[k])}</b></span>`).join("")}</div></div>`:""; })()}
+    <div class="tools"><select id="rsK0" style="max-width:220px"><option value="">Semua kategori</option>${(j.kategori||[]).map(k=>`<option ${RS_K===k?"selected":""}>${esc(k)}</option>`).join("")}</select><input id="rsQ" placeholder="Cari no. resit / pembayar / rujukan…"></div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>No. Resit</th><th>Diterima daripada</th><th>Kategori / rujukan</th><th style="text-align:right">Jumlah</th><th>Emel</th><th></th></tr></thead><tbody id="rsBody"></tbody></table></div>
     <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Nombor resit mengikut siri bulanan YYYYMM(NN). Jika ada resit yang dikeluarkan di luar sistem, catatkan nombornya dalam tab <b>Resit</b> di Google Sheet supaya nombor tidak bertindih.</p>`;
-    const draw=()=>{ const q=$("rsQ").value.toLowerCase();
-      $("rsBody").innerHTML=j.rows.filter(r=>!q||(r.no+r.kepada+r.rujukan).toLowerCase().includes(q)).map(r=>`<tr><td><b>${esc(r.no)}</b><small>${esc(r.tarikh)}</small></td><td><span class="nm">${esc(r.kepada)}</span><small>${esc(r.oleh?"Oleh "+r.oleh:"")}</small></td><td>${esc(r.rujukan||"-")}</td><td style="text-align:right;font-weight:700">${RM(r.jumlah)}</td>
+    const draw=()=>{ const q=$("rsQ").value.toLowerCase(); RS_K=$("rsK0").value;
+      $("rsBody").innerHTML=j.rows.filter(r=>(!RS_K||r.kategori===RS_K)&&(!q||(r.no+r.kepada+r.rujukan).toLowerCase().includes(q))).map(r=>`<tr><td><b>${esc(r.no)}</b><small>${esc(r.tarikh)}</small></td><td><span class="nm">${esc(r.kepada)}</span><small>${esc(r.oleh?"Oleh "+r.oleh:"")}</small></td><td>${esc(r.kategori||"-")}<small>${esc(r.rujukan||"")}</small></td><td style="text-align:right;font-weight:700">${RM(r.jumlah)}</td>
         <td>${r.emel?(/GAGAL/.test(r.dihantar)?`<span class="st r">Gagal</span>`:r.dihantar?`<span class="st g">Dihantar</span>`:`<span class="st">Belum</span>`):`<small style="color:var(--muted)">Tiada emel</small>`}<small>${esc(r.emel||"")}</small></td>
         <td style="white-space:nowrap">${r.ada?`<button class="btn b-ghost b-sm" onclick="resitPdf('${esc(r.no)}',true)">Lihat</button> <button class="btn b-ghost b-sm" onclick="resitResend('${esc(r.no)}','${esc(r.emel||"")}')">Emel</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">Tiada resit.</td></tr>`; };
-    $("rsQ").oninput=draw; draw();
+    $("rsQ").oninput=draw; $("rsK0").onchange=draw; draw();
   }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
 };
 async function resitPdf(no,view){ toast("Menyediakan PDF…"); try{ openBlob(await api("resitPdf",{no}),view); }catch(e){ toast(e.message,true); } }
 async function resitResend(no,emel){ const to=prompt("Hantar resit "+no+" ke emel:",emel||""); if(!to) return; try{ const j=await api("resitResend",{no,emel:to}); toast(j.message); R.resit(); }catch(e){ toast(e.message,true); } }
 function resitRow(){ return `<tr><td><input class="rd" placeholder="cth: Exhibition Booth / Tajaan"></td><td><input class="rq" type="number" min="1" value="1" style="max-width:80px"></td><td><input class="rp" type="number" min="0" step="0.01" placeholder="0.00"></td><td class="rt" style="text-align:right;font-weight:700">-</td><td><button class="btn b-ghost b-sm" onclick="this.closest('tr').remove();resitTot()">×</button></td></tr>`; }
+const RS_DESC={"Yuran keahlian":"Membership Fee","Yuran permukiman":"Retreat / Workshop Fee","Yuran bengkel / kursus":"Workshop / Course Fee","Yuran webinar":"Webinar Registration Fee","Bayaran konsultasi":"Consultancy Fee","Tajaan":"Sponsorship","Gerai pameran":"Exhibition Booth","Sumbangan / derma":"Donation","Lain-lain":""};
+function resitKat(){ const k=$("rsKat").value, d=document.querySelector("#rsItems .rd"); if(d&&!d.value&&RS_DESC[k]) d.value=RS_DESC[k]+($("rsR").value?" — "+$("rsR").value:""); }
 function resitTot(){ let t=0; document.querySelectorAll("#rsItems tbody tr").forEach(tr=>{ const v=(+tr.querySelector(".rq").value||0)*(+tr.querySelector(".rp").value||0); tr.querySelector(".rt").textContent=v?RM(v):"-"; t+=v; }); $("rsTot").textContent=RM(t); }
 function resitForm(){
-  $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>Jana resit manual</h3><small>Untuk bayaran selain keahlian: tajaan, gerai pameran, yuran program dan sebagainya</small></div><button class="x" onclick="closeDrawer()">×</button></div>
-  <div class="db"><div class="up"><div class="full"><label class="l">Diterima daripada (Bill to) *</label><input id="rsK" placeholder="Nama individu / syarikat"></div>
+  $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>Resit terimaan baharu</h3><small>Untuk sebarang terimaan: yuran permukiman, webinar, bengkel, konsultasi, tajaan, sumbangan dan sebagainya</small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  <div class="db"><div class="up"><div><label class="l">Kategori terimaan *</label><select id="rsKat" onchange="resitKat()"><option value="">— Pilih —</option>${(CACHE.resitKat||[]).map(k=>`<option>${esc(k)}</option>`).join("")}</select></div><div><label class="l">Rujukan / nama program (pilihan)</label><input id="rsR" placeholder="cth: Permukiman Pelan Strategik 2027"></div>
+    <div class="full"><label class="l">Diterima daripada (Bill to) *</label><input id="rsK" placeholder="Nama individu / syarikat"></div>
     <div class="full"><label class="l">Maklumat tambahan (satu baris setiap satu: wakil, alamat…)</label><textarea id="rsM" rows="4"></textarea></div>
     <div><label class="l">Tarikh resit</label><input id="rsT" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label class="l">Emel penerima (pilihan)</label><input id="rsE" type="email"></div>
     <div class="full"><label class="l">Butiran bayaran (cara / no. rujukan)</label><input id="rsC" placeholder="cth: Pindahan bank 20/11/2026, Ref. 123456"></div></div>
@@ -863,11 +868,12 @@ function resitForm(){
 }
 async function resitSubmit(){
   const items=[...document.querySelectorAll("#rsItems tbody tr")].map(tr=>({desc:tr.querySelector(".rd").value.trim(),qty:+tr.querySelector(".rq").value||1,price:+tr.querySelector(".rp").value||0})).filter(i=>i.desc&&i.price>0);
+  if(!$("rsKat").value) return toast("Sila pilih kategori terimaan.",true);
   if(!$("rsK").value.trim()) return toast("Sila isi nama pembayar.",true);
   if(!items.length) return toast("Sila isi sekurang-kurangnya satu butiran dengan harga.",true);
   if(!confirm(`Jana resit rasmi berjumlah ${$("rsTot").textContent}? Nombor resit tidak boleh diguna semula.`)) return;
   $("rsBtn").disabled=true;
-  try{ const j=await api("resitManual",{kepada:$("rsK").value,maklumat:$("rsM").value,tarikh:$("rsT").value,emel:$("rsE").value,cara:$("rsC").value,catatan:$("rsN").value,items}); toast(j.message); closeDrawer(); R.resit(); }
+  try{ const j=await api("resitManual",{kategori:$("rsKat").value,rujukan:$("rsR").value,kepada:$("rsK").value,maklumat:$("rsM").value,tarikh:$("rsT").value,emel:$("rsE").value,cara:$("rsC").value,catatan:$("rsN").value,items}); toast(j.message); closeDrawer(); R.resit(); }
   catch(e){ toast(e.message,true); $("rsBtn").disabled=false; }
 }
 
