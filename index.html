@@ -905,6 +905,7 @@ R.auto=async()=>{
     <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card"><h3>Peringatan pembaharuan ${j.tahun+1}</h3><p style="font-size:.86rem;color:var(--muted)">Peringatan pertama ${esc(P.r1)} · kedua ${esc(P.r2)}. Ahli yang telah membayar atau menghantar permohonan pembaharuan dikecualikan secara automatik.</p>
         <p style="margin:10px 0;font-size:.9rem"><b>${P.sasaran}</b> ahli tahunan belum membayar yuran ${j.tahun+1} (${P.sasaranEmel} ada emel). Dihantar: pertama <b>${P.dihantar1}</b>, kedua <b>${P.dihantar2}</b>.</p>
+        <div class="row" style="margin:4px 0 12px"><button class="btn b-gold" onclick="autoPush(this)">📨 Hantar peringatan sekarang</button></div>
         <div style="max-height:260px;overflow:auto">${P.senarai.map(x=>`<div style="font-size:.85rem;padding:5px 0;border-bottom:1px solid var(--line)">${esc(x.noAhli)} · ${esc(x.nama)} ${x.emel?"":`<span class="st r">tiada emel</span>`}</div>`).join("")||`<div class="empty">Tiada.</div>`}</div></div>
       <div class="card"><h3>Hari lahir 30 hari akan datang</h3>
         <div style="max-height:300px;overflow:auto">${j.hariLahir.map(x=>`<div style="font-size:.85rem;padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(x.tarikh)}</b> · ${esc(x.nama)} ${x.emel?"":`<span class="st r">tiada emel</span>`}</div>`).join("")||`<div class="empty">Tiada.</div>`}</div></div>
@@ -915,6 +916,15 @@ R.auto=async()=>{
 };
 async function autoSave(btn,trig){ const flags={}; ["AUTO_RESIT","AUTO_PERINGATAN","AUTO_HARILAHIR"].forEach(k=>flags[k]=$("af_"+k).checked);
   btn.disabled=true; try{ const j=await api("autoSave",{flags,trigger:trig}); toast(j.message); R.auto(); }catch(e){ toast(e.message,true); btn.disabled=false; } }
+async function autoPush(btn){
+  btn.disabled=true;
+  try{ const i=await api("autoPushInfo");
+    if(!i.adaEmel){ toast("Tiada ahli tahunan yang belum membayar yuran "+i.tahun+" dan mempunyai emel.",true); btn.disabled=false; return; }
+    const msg=`Hantar emel peringatan yuran ${i.tahun} SEKARANG?\n\nPenerima: ${i.adaEmel} ahli berstatus "Tahunan" yang belum membayar yuran ${i.tahun}${i.jumlah>i.adaEmel?` (${i.jumlah-i.adaEmel} lagi tiada emel)`:""}.\nBaki kuota emel hari ini: ${i.kuota}.\n\nEmel akan terus dihantar dan tidak boleh dibatalkan.`;
+    if(!confirm(msg)){ btn.disabled=false; return; }
+    toast("Menghantar peringatan…"); const j=await api("autoPush"); toast(j.message); R.auto();
+  }catch(e){ toast(e.message,true); btn.disabled=false; }
+}
 async function autoTest(btn,kind){ btn.disabled=true; toast("Menghantar…"); try{ const j=await api("autoTest",{kind}); toast(j.message); }catch(e){ toast(e.message,true); } btn.disabled=false; }
 
 /* ---------- SISTEM ---------- */
