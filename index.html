@@ -42,6 +42,7 @@ label.l{display:block;font-size:.78rem;font-weight:800;color:var(--g8);margin:12
 /* SHELL */
 .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
 aside{background:var(--g9);color:#fff;padding:20px 14px;position:sticky;top:0;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.25) transparent}
+@media(max-width:860px){.grid2{grid-template-columns:1fr!important}}
 @media (max-height:780px){aside{padding:14px 12px}.brand{padding-bottom:12px;margin-bottom:6px}nav a{padding:7px 12px}nav .sep{padding:8px 12px 4px}.who{padding-top:10px}.who button{margin-top:6px}}
 .brand{display:flex;gap:10px;align-items:center;padding:4px 8px 18px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:12px}
 .brand img{width:42px;height:42px;background:#fff;border-radius:50%}
@@ -163,6 +164,7 @@ details.card summary::after{content:"+";font-size:1.2rem}details.card[open] summ
   .kv{grid-template-columns:1fr}.kv .k{border-top:1px solid var(--line)!important;padding-bottom:2px}.kv .v{border-top:0!important;padding-top:2px}
   .cur{grid-template-columns:1fr}.doc{grid-template-columns:auto 1fr}.doc .acts{grid-column:1/-1;justify-content:flex-start}
 }
+.st{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 9px;border-radius:999px;background:#eceee8;color:#555;margin-left:4px}.st.g{background:#e1f3dd;color:#1d6a25}.st.r{background:#fdecea;color:#b3261e}
 .xtabs{display:flex;gap:6px;margin:-4px 0 16px;border-bottom:1.5px solid var(--line);flex-wrap:wrap}.xtabs button{font:inherit;font-weight:800;font-size:.9rem;background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;color:var(--muted);cursor:pointer;margin-bottom:-1.5px}.xtabs button.on{color:var(--g8);border-bottom-color:var(--gold)}.xtabs i{font-style:normal;background:var(--gold);color:#fff;border-radius:999px;padding:1px 7px;font-size:.72rem;margin-left:4px}
 </style>
 </head>
@@ -221,6 +223,7 @@ const I={
   cog:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/>',
   form:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   money:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 10v4M18 10v4"/>',
   minit:'<path d="M9 4h6l1 2h3a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h3z"/><path d="M8 12h8M8 16h5"/>',
   sheet:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
@@ -266,6 +269,7 @@ const PAGES=[
   {id:"pendaftaran",t:"Pendaftaran",ic:"reg",cnt:true},
   {id:"ahli",t:"Senarai Ahli",ic:"users"},
   {id:"pkb",t:"Perbelanjaan",ic:"money",cnt:true},
+  {id:"auto",t:"Emel automatik",ic:"mail",need:"keahlian"},
   {sep:"Dokumen"},
   {id:"perlembagaan",t:"Perlembagaan",ic:"book"},
   {id:"borang",t:"Borang",ic:"file"},
@@ -367,9 +371,10 @@ async function openReg(ref){
         <div class="fprev"><h4>Bukti bayaran ${d.hasResit?`<button class="btn b-ghost b-sm" onclick="openRegFile('${esc(ref)}','resit',true)">Buka</button>`:""}</h4><div id="pvResit">${d.hasResit?loading("Memuatkan resit…"):"Tiada fail."}</div></div>
         <div class="fprev"><h4>Borang keahlian</h4>${d.hasBorang?`<p style="font-size:.85rem;color:var(--muted)">Borang PDF yang dijana semasa pendaftaran.</p><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn b-ghost b-sm" onclick="openRegFile('${esc(ref)}','borang',true)">${svg("eye")}Lihat</button><button class="btn b-ghost b-sm" onclick="openRegFile('${esc(ref)}','borang',false)">${svg("dl")}Muat turun</button></div>`:"Tiada fail."}</div>
       </div>
+      ${d.resitRasmi?`<div class="msg ok" style="margin:12px 0">Resit rasmi <b>${esc(d.resitRasmi)}</b> telah dikeluarkan. <button class="btn b-ghost b-sm" onclick="resitPdf('${esc(d.resitRasmi)}',true)">Lihat resit</button></div>`:""}
       <div class="kv">${d.fields.map(([k,v])=>`<div class="k">${esc(k)}</div><div class="v">${esc(v||"-")}</div>`).join("")}</div>
       ${mgr&&!done?`
-      <div class="act"><h4>Tindakan</h4><p>Semak bukti bayaran sebelum mengesahkan. Semua tindakan direkodkan dalam log.</p>
+      <div class="act"><h4>Tindakan</h4><p>Semak bukti bayaran sebelum mengesahkan. Apabila bayaran disahkan, resit rasmi dijana dan diemelkan kepada ahli secara automatik. Semua tindakan direkodkan dalam log.</p>
         <label class="l">Catatan (pilihan; wajib untuk "Tidak Diluluskan")</label><textarea id="actNote" rows="2"></textarea>
         <div class="row">
           ${s.status==="Baharu"?`<button class="btn b-ghost" onclick="regAct('${esc(ref)}','verify')">✓ Sahkan Bayaran</button>`:""}
@@ -663,7 +668,7 @@ async function pkbClose(ref){
 }
 
 /* ---------- TUNTUTAN BAYARAN BALIK ---------- */
-function expTabs(on){ return `<div class="xtabs"><button class="${on==="pkb"?"on":""}" onclick="R.pkb()">📝 PKB <span id="xtP">${CACHE.todoP?`<i>${CACHE.todoP}</i>`:""}</span></button><button class="${on==="tnt"?"on":""}" onclick="R.tnt()">🧾 Tuntutan bayaran balik <span id="xtT">${CACHE.todoT?`<i>${CACHE.todoT}</i>`:""}</span></button></div>`; }
+function expTabs(on){ return `<div class="xtabs"><button class="${on==="pkb"?"on":""}" onclick="R.pkb()">📝 PKB <span id="xtP">${CACHE.todoP?`<i>${CACHE.todoP}</i>`:""}</span></button><button class="${on==="tnt"?"on":""}" onclick="R.tnt()">🧾 Tuntutan bayaran balik <span id="xtT">${CACHE.todoT?`<i>${CACHE.todoT}</i>`:""}</span></button>${CAP("kewangan")||CAP("admin")?`<button class="${on==="resit"?"on":""}" onclick="R.resit()">📄 Resit</button>`:""}</div>`; }
 function setExpCnt(){ setCnt((CACHE.todoP||0)+(CACHE.todoT||0),"pkb"); }
 let TNT_F="todo", TNT_Q="", TNT_Y="";
 function myTodoT(r){ const c=USER.caps||{}; return (c.kewangan&&["Menunggu Semakan","Diluluskan","Dibayar"].includes(r.status))||(c.slot==="PENGERUSI"&&r.status==="Menunggu Kelulusan"); }
@@ -818,6 +823,93 @@ async function tntClose(ref){
   try{ const payload={ref,nota:$("cNota").value}; const f=$("cFail").files[0]; if(f) payload.fail={name:f.name,type:f.type,data:await readB64(f)};
     if(!confirm("Tutup tuntutan ini sebagai Selesai?")) return; const j=await api("tntClose",payload); toast(j.message); closeDrawer(); R.tnt(); }catch(e){ toast(e.message,true); }
 }
+
+/* ---------- RESIT ---------- */
+R.resit=async()=>{
+  const m=$("main");
+  const H=()=>head("Perbelanjaan","Resit rasmi persatuan: dijana automatik selepas bayaran keahlian disahkan, atau secara manual untuk bayaran lain.",
+    `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn b-gold" onclick="resitForm()">+ Jana resit manual</button><button class="btn b-ghost" onclick="R.resit()">Muat semula</button></div>`)+expTabs("resit");
+  m.innerHTML=H()+loading();
+  try{
+    const j=await api("resitList"); CACHE.resit=j.rows;
+    const yr=String(new Date().getFullYear()), sum=j.rows.filter(r=>String(r.tarikh).slice(-4)===yr).reduce((a,r)=>a+r.jumlah,0);
+    m.innerHTML=H()+`<div class="tiles"><div class="tile"><b>${j.rows.length}</b><span>Jumlah resit</span></div><div class="tile"><b style="font-size:1.5rem">${RM(sum)}</b><span>Kutipan berresit ${yr}</span></div>
+      <div class="tile"><b>${j.rows.filter(r=>/GAGAL/.test(r.dihantar)).length}</b><span>Emel gagal</span></div></div>
+    <div class="tools"><input id="rsQ" placeholder="Cari no. resit / pembayar / rujukan…"></div>
+    <div class="tblw"><table class="tbl"><thead><tr><th>No. Resit</th><th>Diterima daripada</th><th>Rujukan</th><th style="text-align:right">Jumlah</th><th>Emel</th><th></th></tr></thead><tbody id="rsBody"></tbody></table></div>
+    <p style="font-size:.8rem;color:var(--muted);margin-top:10px">Nombor resit mengikut siri bulanan YYYYMM(NN). Jika ada resit yang dikeluarkan di luar sistem, catatkan nombornya dalam tab <b>Resit</b> di Google Sheet supaya nombor tidak bertindih.</p>`;
+    const draw=()=>{ const q=$("rsQ").value.toLowerCase();
+      $("rsBody").innerHTML=j.rows.filter(r=>!q||(r.no+r.kepada+r.rujukan).toLowerCase().includes(q)).map(r=>`<tr><td><b>${esc(r.no)}</b><small>${esc(r.tarikh)}</small></td><td><span class="nm">${esc(r.kepada)}</span><small>${esc(r.oleh?"Oleh "+r.oleh:"")}</small></td><td>${esc(r.rujukan||"-")}</td><td style="text-align:right;font-weight:700">${RM(r.jumlah)}</td>
+        <td>${r.emel?(/GAGAL/.test(r.dihantar)?`<span class="st r">Gagal</span>`:r.dihantar?`<span class="st g">Dihantar</span>`:`<span class="st">Belum</span>`):`<small style="color:var(--muted)">Tiada emel</small>`}<small>${esc(r.emel||"")}</small></td>
+        <td style="white-space:nowrap">${r.ada?`<button class="btn b-ghost b-sm" onclick="resitPdf('${esc(r.no)}',true)">Lihat</button> <button class="btn b-ghost b-sm" onclick="resitResend('${esc(r.no)}','${esc(r.emel||"")}')">Emel</button>`:""}</td></tr>`).join("")||`<tr><td colspan="6" class="empty">Tiada resit.</td></tr>`; };
+    $("rsQ").oninput=draw; draw();
+  }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+};
+async function resitPdf(no,view){ toast("Menyediakan PDF…"); try{ openBlob(await api("resitPdf",{no}),view); }catch(e){ toast(e.message,true); } }
+async function resitResend(no,emel){ const to=prompt("Hantar resit "+no+" ke emel:",emel||""); if(!to) return; try{ const j=await api("resitResend",{no,emel:to}); toast(j.message); R.resit(); }catch(e){ toast(e.message,true); } }
+function resitRow(){ return `<tr><td><input class="rd" placeholder="cth: Exhibition Booth / Tajaan"></td><td><input class="rq" type="number" min="1" value="1" style="max-width:80px"></td><td><input class="rp" type="number" min="0" step="0.01" placeholder="0.00"></td><td class="rt" style="text-align:right;font-weight:700">-</td><td><button class="btn b-ghost b-sm" onclick="this.closest('tr').remove();resitTot()">×</button></td></tr>`; }
+function resitTot(){ let t=0; document.querySelectorAll("#rsItems tbody tr").forEach(tr=>{ const v=(+tr.querySelector(".rq").value||0)*(+tr.querySelector(".rp").value||0); tr.querySelector(".rt").textContent=v?RM(v):"-"; t+=v; }); $("rsTot").textContent=RM(t); }
+function resitForm(){
+  $("ov").hidden=false; $("drawer").innerHTML=`<div class="dh"><div><h3>Jana resit manual</h3><small>Untuk bayaran selain keahlian: tajaan, gerai pameran, yuran program dan sebagainya</small></div><button class="x" onclick="closeDrawer()">×</button></div>
+  <div class="db"><div class="up"><div class="full"><label class="l">Diterima daripada (Bill to) *</label><input id="rsK" placeholder="Nama individu / syarikat"></div>
+    <div class="full"><label class="l">Maklumat tambahan (satu baris setiap satu: wakil, alamat…)</label><textarea id="rsM" rows="4"></textarea></div>
+    <div><label class="l">Tarikh resit</label><input id="rsT" type="date" value="${new Date().toISOString().slice(0,10)}"></div><div><label class="l">Emel penerima (pilihan)</label><input id="rsE" type="email"></div>
+    <div class="full"><label class="l">Butiran bayaran (cara / no. rujukan)</label><input id="rsC" placeholder="cth: Pindahan bank 20/11/2026, Ref. 123456"></div></div>
+    <div class="tblw" style="margin-top:12px"><table class="tbl" id="rsItems"><thead><tr><th>Butiran (Description)</th><th>Kuantiti</th><th>Harga seunit (RM)</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody>${resitRow()}</tbody></table></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px"><button class="btn b-ghost b-sm" onclick="document.querySelector('#rsItems tbody').insertAdjacentHTML('beforeend',resitRow())">+ Tambah butiran</button><b>JUMLAH: <span id="rsTot">RM0.00</span></b></div>
+    <label class="l">Catatan dalaman (tidak dicetak)</label><input id="rsN">
+    <div class="row" style="margin-top:14px"><button class="btn b-gold" id="rsBtn" onclick="resitSubmit()">Jana resit</button></div></div>`;
+  $("drawer").addEventListener("input",e=>{ if(e.target.closest("#rsItems")) resitTot(); });
+}
+async function resitSubmit(){
+  const items=[...document.querySelectorAll("#rsItems tbody tr")].map(tr=>({desc:tr.querySelector(".rd").value.trim(),qty:+tr.querySelector(".rq").value||1,price:+tr.querySelector(".rp").value||0})).filter(i=>i.desc&&i.price>0);
+  if(!$("rsK").value.trim()) return toast("Sila isi nama pembayar.",true);
+  if(!items.length) return toast("Sila isi sekurang-kurangnya satu butiran dengan harga.",true);
+  if(!confirm(`Jana resit rasmi berjumlah ${$("rsTot").textContent}? Nombor resit tidak boleh diguna semula.`)) return;
+  $("rsBtn").disabled=true;
+  try{ const j=await api("resitManual",{kepada:$("rsK").value,maklumat:$("rsM").value,tarikh:$("rsT").value,emel:$("rsE").value,cara:$("rsC").value,catatan:$("rsN").value,items}); toast(j.message); closeDrawer(); R.resit(); }
+  catch(e){ toast(e.message,true); $("rsBtn").disabled=false; }
+}
+
+/* ---------- EMEL AUTOMATIK ---------- */
+R.auto=async()=>{
+  const m=$("main"); const H=head("Emel automatik","Resit, peringatan pembaharuan keahlian dan ucapan hari lahir yang dihantar oleh sistem.");
+  m.innerHTML=H+loading();
+  try{
+    const j=await api("autoGet"); const A=CAP("admin"), P=j.peringatan;
+    const sw=(k,t,d)=>`<label class="chk" style="align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)"><input type="checkbox" id="af_${k}" ${j.flags[k]?"checked":""} ${A?"":"disabled"}><span><b>${t}</b><small style="display:block;color:var(--muted)">${d}</small></span></label>`;
+    m.innerHTML=H+(!j.setup?`<div class="msg err">Ciri ini belum dipasang. Pentadbir perlu menjalankan fungsi <b>setupAhli</b> sekali dalam editor Apps Script.</div>`:"")+
+    (j.err?`<div class="msg err">Senarai Ahli tidak dapat dibaca: ${esc(j.err)}</div>`:"")+`
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card"><h3>Tetapan</h3>
+        ${sw("AUTO_RESIT","Resit rasmi automatik","Dijana dan diemelkan apabila bayaran pendaftaran / pembaharuan disahkan.")}
+        ${sw("AUTO_PERINGATAN","Peringatan pembaharuan","Ahli tahunan yang belum bayar yuran tahun hadapan: 31 Oktober dan 30 November.")}
+        ${sw("AUTO_HARILAHIR","Ucapan hari lahir","Emel dan e-kad pada tarikh lahir (daripada No. KP), jam "+j.jam+" pagi.")}
+        <p style="font-size:.84rem;margin-top:10px">Pencetus harian: ${j.trigger?`<span class="st g">Aktif</span>`:`<span class="st r">Tidak aktif</span>`}</p>
+        ${A?`<div class="row"><button class="btn b-green" onclick="autoSave(this,false)">Simpan</button>${j.trigger?"":`<button class="btn b-ghost" onclick="autoSave(this,true)">Pasang pencetus</button>`}</div>`:`<p style="font-size:.8rem;color:var(--muted)">Hanya Pentadbir boleh mengubah tetapan.</p>`}</div>
+      <div class="card"><h3>Hantar contoh ke emel saya</h3><p style="font-size:.86rem;color:var(--muted);margin-bottom:10px">Lihat rupa emel sebenar sebelum dihantar kepada ahli. Emel dihantar ke alamat dalam akaun anda.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">
+          <button class="btn b-ghost" onclick="autoTest(this,'resit')">📄 Resit rasmi (contoh)</button>
+          <button class="btn b-ghost" onclick="autoTest(this,'r1')">🔔 Peringatan pembaharuan pertama</button>
+          <button class="btn b-ghost" onclick="autoTest(this,'r2')">🔔 Peringatan pembaharuan kedua</button>
+          <button class="btn b-ghost" onclick="autoTest(this,'bday')">🎂 Ucapan & e-kad hari lahir (nama anda)</button></div></div>
+    </div>
+    <div class="tiles" style="margin-top:16px"><div class="tile"><b>${j.jumlahAhli}</b><span>Ahli dalam senarai</span></div><div class="tile hl"><b>${j.adaEmel}</b><span>Ada alamat emel</span></div>
+      <div class="tile"><b>${j.tiadaEmel.length}</b><span>Tiada emel</span></div><div class="tile"><b>${j.bdDihantar}</b><span>Ucapan hari lahir ${j.tahun}</span></div></div>
+    <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card"><h3>Peringatan pembaharuan ${j.tahun+1}</h3><p style="font-size:.86rem;color:var(--muted)">Peringatan pertama ${esc(P.r1)} · kedua ${esc(P.r2)}. Ahli yang telah membayar atau menghantar permohonan pembaharuan dikecualikan secara automatik.</p>
+        <p style="margin:10px 0;font-size:.9rem"><b>${P.sasaran}</b> ahli tahunan belum membayar yuran ${j.tahun+1} (${P.sasaranEmel} ada emel). Dihantar: pertama <b>${P.dihantar1}</b>, kedua <b>${P.dihantar2}</b>.</p>
+        <div style="max-height:260px;overflow:auto">${P.senarai.map(x=>`<div style="font-size:.85rem;padding:5px 0;border-bottom:1px solid var(--line)">${esc(x.noAhli)} · ${esc(x.nama)} ${x.emel?"":`<span class="st r">tiada emel</span>`}</div>`).join("")||`<div class="empty">Tiada.</div>`}</div></div>
+      <div class="card"><h3>Hari lahir 30 hari akan datang</h3>
+        <div style="max-height:300px;overflow:auto">${j.hariLahir.map(x=>`<div style="font-size:.85rem;padding:5px 0;border-bottom:1px solid var(--line)"><b>${esc(x.tarikh)}</b> · ${esc(x.nama)} ${x.emel?"":`<span class="st r">tiada emel</span>`}</div>`).join("")||`<div class="empty">Tiada.</div>`}</div></div>
+    </div>
+    <div class="card" style="margin-top:16px"><h3>Ahli tanpa alamat emel (${j.tiadaEmel.length})</h3><p style="font-size:.86rem;color:var(--muted)">Emel diambil daripada lajur <b>Emel</b> dalam Senarai Ahli. Jika tiada, sistem guna emel daripada rekod pendaftaran di portal. Tambah satu lajur bertajuk <b>Emel</b> di hujung Senarai Ahli dan isi alamat ahli di bawah supaya mereka turut menerima emel.</p>
+      <div style="columns:2;font-size:.85rem;margin-top:8px">${j.tiadaEmel.map(x=>`<div>${esc(x.noAhli)} · ${esc(x.nama)}</div>`).join("")||"Semua ahli mempunyai emel."}</div></div>`;
+  }catch(e){ m.querySelector(".loading").outerHTML=`<div class="msg err">${esc(e.message)}</div>`; }
+};
+async function autoSave(btn,trig){ const flags={}; ["AUTO_RESIT","AUTO_PERINGATAN","AUTO_HARILAHIR"].forEach(k=>flags[k]=$("af_"+k).checked);
+  btn.disabled=true; try{ const j=await api("autoSave",{flags,trigger:trig}); toast(j.message); R.auto(); }catch(e){ toast(e.message,true); btn.disabled=false; } }
+async function autoTest(btn,kind){ btn.disabled=true; toast("Menghantar…"); try{ const j=await api("autoTest",{kind}); toast(j.message); }catch(e){ toast(e.message,true); } btn.disabled=false; }
 
 /* ---------- SISTEM ---------- */
 R.pengguna=async()=>{
