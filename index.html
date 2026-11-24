@@ -901,7 +901,8 @@ R.auto=async()=>{
           <button class="btn b-ghost" onclick="autoTest(this,'bday')">🎂 Ucapan & e-kad hari lahir (nama anda)</button></div></div>
     </div>
     <div class="tiles" style="margin-top:16px"><div class="tile"><b>${j.jumlahAhli}</b><span>Ahli dalam senarai</span></div><div class="tile hl"><b>${j.adaEmel}</b><span>Ada alamat emel</span></div>
-      <div class="tile"><b>${j.tiadaEmel.length}</b><span>Tiada emel</span></div><div class="tile"><b>${j.bdDihantar}</b><span>Ucapan hari lahir ${j.tahun}</span></div></div>
+      <div class="tile"><b>${j.tiadaEmel.length}</b><span>Tiada emel</span></div><div class="tile"><b>${j.bdDihantar}</b><span>Ucapan hari lahir ${j.tahun}</span></div>
+      <div class="tile" title="Had Google: 100 penerima sehari bagi akaun Gmail biasa. Ditetapkan semula 24 jam selepas emel pertama."><b style="color:${j.kuota<20?"var(--red)":"inherit"}">${j.kuota}</b><span>Baki kuota emel hari ini (had 100)</span></div></div>
     <div class="grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card"><h3>Peringatan pembaharuan ${j.tahun+1}</h3><p style="font-size:.86rem;color:var(--muted)">Peringatan pertama ${esc(P.r1)} · kedua ${esc(P.r2)}. Ahli yang telah membayar atau menghantar permohonan pembaharuan dikecualikan secara automatik.</p>
         <p style="margin:10px 0;font-size:.9rem"><b>${P.sasaran}</b> ahli tahunan belum membayar yuran ${j.tahun+1} (${P.sasaranEmel} ada emel). Dihantar: pertama <b>${P.dihantar1}</b>, kedua <b>${P.dihantar2}</b>.</p>
